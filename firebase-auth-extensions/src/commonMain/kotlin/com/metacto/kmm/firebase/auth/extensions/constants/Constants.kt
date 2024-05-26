@@ -1,0 +1,7 @@
+package com.metacto.kmm.firebase.auth.extensions.constants
+
+object Constants {
+    const val SIGN_IN_EMAIL_LINK_EMAIL = "SIGN_IN_EMAIL_LINK_EMAIL"
+    const val VERIFICATION_PHONE_NUMBER = "VERIFICATION_PHONE_NUMBER"
+    const val VERIFICATION_PHONE_NUMBER_VERIFICATION_ID = "VERIFICATION_PHONE_NUMBER_VERIFICATION_ID"
+}
