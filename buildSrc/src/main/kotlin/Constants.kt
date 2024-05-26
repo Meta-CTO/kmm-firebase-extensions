@@ -1,5 +1,5 @@
 object Constants {
-    const val GROUP_ID = "com.metacto.kmm.analytics"
+    const val GROUP_ID = "com.metacto.kmm"
     const val PUBLISH_REPO_USER = "PUBLISH_REPO_USER"
     const val PUBLISH_REPO_TOKEN = "PUBLISH_REPO_TOKEN"
     const val LOCAL_PROPERTIES = "local.properties"
