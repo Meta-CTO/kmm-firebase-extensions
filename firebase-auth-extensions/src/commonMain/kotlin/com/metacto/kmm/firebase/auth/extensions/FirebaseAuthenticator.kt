@@ -106,6 +106,7 @@ class FirebaseAuthenticator(
         return authenticateWithCredentials(credentials)
     }
 
+    @Throws(Throwable::class)
     override suspend fun signOut() {
         Firebase.auth.signOut()
     }
