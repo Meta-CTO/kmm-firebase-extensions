@@ -27,4 +27,7 @@ interface Authenticator {
 
     @Throws(Throwable::class)
     suspend fun verifyPhoneVerification(code: String): String
+
+    @Throws(Throwable::class)
+    suspend fun signOut()
 }

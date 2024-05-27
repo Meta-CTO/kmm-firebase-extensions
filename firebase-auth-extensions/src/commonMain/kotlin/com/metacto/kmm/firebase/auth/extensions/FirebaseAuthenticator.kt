@@ -106,6 +106,10 @@ class FirebaseAuthenticator(
         return authenticateWithCredentials(credentials)
     }
 
+    override suspend fun signOut() {
+        Firebase.auth.signOut()
+    }
+
     @Throws(Throwable::class)
     private suspend fun authenticateWithCredentials(credentials: AuthCredential): String {
         val user = Firebase.auth.signInWithCredential(credentials).user
