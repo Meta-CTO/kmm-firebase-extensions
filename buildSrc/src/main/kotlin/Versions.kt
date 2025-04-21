@@ -6,7 +6,7 @@ object Versions {
     }
 
     object Kotlin {
-        const val KOTLIN = "1.9.23"
+        const val KOTLIN = "2.1.10"
     }
 
     object Android {
@@ -15,7 +15,7 @@ object Versions {
     }
 
     object Gradle {
-        const val BUILD_TOOLS = "8.4.0"
+        const val BUILD_TOOLS = "8.8.2"
     }
 
     object Libs {
@@ -26,7 +26,8 @@ object Versions {
 
         object Android {
             const val ACTIVITY_KTX = "1.9.0"
-            const val FIREBASE_AUTH = "21.1.1"
+            const val GOOGLE_AUTH = "21.3.0"
+            const val FIREBASE_AUTH = "23.2.0"
         }
 
         object Firebase {
@@ -35,5 +36,7 @@ object Versions {
         }
     }
 
-
+    object Plugins {
+        const val SPM_4_KMP = "0.6.0"
+    }
 }

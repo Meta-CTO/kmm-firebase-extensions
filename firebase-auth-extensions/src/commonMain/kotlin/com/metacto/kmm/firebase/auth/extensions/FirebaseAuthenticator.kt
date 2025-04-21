@@ -5,14 +5,30 @@ import com.metacto.kmm.auth.common.AuthenticationMetadata
 import com.metacto.kmm.auth.common.Authenticator
 import com.metacto.kmm.auth.common.PhoneVerifierMetadata
 import com.metacto.kmm.auth.common.PhoneVerifierProvider
+import com.metacto.kmm.firebase.auth.ActionCodeSettings
 import com.metacto.kmm.firebase.auth.extensions.constants.Constants
-import com.metacto.kmm.firebase.auth.extensions.mappers.toPhoneVerificationProvider
-import com.metacto.kmm.firebase.auth.extensions.mappers.toPhoneVerifierMetadata
-import dev.gitlive.firebase.Firebase
-import dev.gitlive.firebase.auth.ActionCodeSettings
-import dev.gitlive.firebase.auth.AuthCredential
-import dev.gitlive.firebase.auth.PhoneAuthProvider
-import dev.gitlive.firebase.auth.auth
+
+@Throws(Throwable::class)
+expect fun FirebaseAuthenticator.getIdToken(forceRefresh: Boolean): String
+
+@Throws(Throwable::class)
+expect fun FirebaseAuthenticator.sendSignInLinkToEmail(
+    email: String,
+    actionCodeSettings: ActionCodeSettings
+)
+
+@Throws(Throwable::class)
+expect fun FirebaseAuthenticator.signInWithEmailLink(email: String, link: String): String
+
+@Throws(Throwable::class)
+expect fun FirebaseAuthenticator.verifyPhoneNumber(otp: String, verificationId: String): String
+
+@Throws(Throwable::class)
+expect fun FirebaseAuthenticator.sendSignInOTPToPhone(phoneNumber: String): PhoneVerifierMetadata
+
+@Throws(Throwable::class)
+expect fun FirebaseAuthenticator.logout()
+
 
 class FirebaseAuthenticator(
     private val actionCodeSettings: ActionCodeSettings,
@@ -22,31 +38,25 @@ class FirebaseAuthenticator(
 
     @Throws(Throwable::class)
     override suspend fun authenticateCurrentUser(): String {
-        val user = Firebase.auth.currentUser
-            ?: throw Throwable("Unable to authenticate current user, current user is null")
-        return user.getIdToken(true) ?: throw Throwable("Unable to get idToken")
+        return getIdToken(true)
     }
 
     @Throws(Throwable::class)
     override suspend fun authenticateWithGoogle(authOptions: AuthOptions): AuthenticationMetadata? {
         authClient.setAuthOptions(authOptions)
         authClient.init()
-        val result = authClient.signInWithGoogle() ?: return null
-        val idToken = authenticateWithCredentials(result.authCredential)
-        return AuthenticationMetadata(idToken, result.profileMetadata)
+        return authClient.signInWithGoogle()
     }
 
     @Throws(Throwable::class)
-    override suspend fun authenticateWithApple(): AuthenticationMetadata {
-        val result = authClient.signInWithApple()
-        val idToken = authenticateWithCredentials(result.authCredential)
-        return AuthenticationMetadata(idToken, result.profileMetadata)
+    override suspend fun authenticateWithApple(): AuthenticationMetadata? {
+        return  authClient.signInWithApple()
     }
 
     @Throws(Throwable::class)
     override suspend fun sendEmailLink(email: String) {
         firebaseAuthPreferences.putSecureString(Constants.SIGN_IN_EMAIL_LINK_EMAIL, email)
-        Firebase.auth.sendSignInLinkToEmail(email, actionCodeSettings)
+        sendSignInLinkToEmail(email, actionCodeSettings)
     }
 
     @Throws(Throwable::class)
@@ -60,9 +70,7 @@ class FirebaseAuthenticator(
     override suspend fun verifyEmailLink(link: String): String {
         val email = firebaseAuthPreferences.getSecureString(Constants.SIGN_IN_EMAIL_LINK_EMAIL)
         if (email.isNullOrEmpty()) throw Throwable("Email is null or empty, please try again.")
-        val user = Firebase.auth.signInWithEmailLink(email, link).user
-            ?: throw Throwable("Signing in failed user is null")
-        return user.getIdToken(true) ?: throw Throwable("Unable to getIdToken")
+        return signInWithEmailLink(email, link)
     }
 
     @Throws(Throwable::class)
@@ -70,10 +78,8 @@ class FirebaseAuthenticator(
         phoneNumber: String,
         phoneVerificationProvider: PhoneVerifierProvider
     ): PhoneVerifierMetadata {
-        val metadata = PhoneAuthProvider().verifyPhoneNumber(
-            phoneNumber,
-            phoneVerificationProvider.toPhoneVerificationProvider()
-        )
+        val metadata = sendSignInOTPToPhone(phoneNumber)
+
         firebaseAuthPreferences.putSecureString(
             Constants.VERIFICATION_PHONE_NUMBER_VERIFICATION_ID,
             metadata.verificationId
@@ -84,37 +90,30 @@ class FirebaseAuthenticator(
             metadata.phoneNumber
         )
 
-        return metadata.toPhoneVerifierMetadata()
+        return metadata
     }
 
     @Throws(Throwable::class)
     override suspend fun resendVerificationCode(phoneVerificationProvider: PhoneVerifierProvider): PhoneVerifierMetadata {
-        val phoneNumber = firebaseAuthPreferences.getSecureString(Constants.VERIFICATION_PHONE_NUMBER)
+        val phoneNumber =
+            firebaseAuthPreferences.getSecureString(Constants.VERIFICATION_PHONE_NUMBER)
         if (phoneNumber.isNullOrEmpty()) throw Throwable("Invalid phone number")
-        return PhoneAuthProvider().verifyPhoneNumber(
+        return sendPhoneVerification(
             phoneNumber,
-            phoneVerificationProvider.toPhoneVerificationProvider()
-        ).toPhoneVerifierMetadata()
+            phoneVerificationProvider
+        )
     }
 
     @Throws(Throwable::class)
-    override suspend fun verifyPhoneVerification(code: String): String {
+    override suspend fun verifyPhoneOTP(code: String): String {
         val verificationId =
             firebaseAuthPreferences.getSecureString(Constants.VERIFICATION_PHONE_NUMBER_VERIFICATION_ID)
         if (verificationId.isNullOrEmpty()) throw Throwable("Unable to verify phone number")
-        val credentials = PhoneAuthProvider().credential(verificationId, code)
-        return authenticateWithCredentials(credentials)
+        return verifyPhoneNumber(code, verificationId)
     }
 
     @Throws(Throwable::class)
     override suspend fun signOut() {
-        Firebase.auth.signOut()
-    }
-
-    @Throws(Throwable::class)
-    private suspend fun authenticateWithCredentials(credentials: AuthCredential): String {
-        val user = Firebase.auth.signInWithCredential(credentials).user
-            ?: throw Throwable("Signing in failed user is null")
-        return user.getIdToken(true) ?: throw Throwable("Unable to getIdToken")
+        logout()
     }
 }

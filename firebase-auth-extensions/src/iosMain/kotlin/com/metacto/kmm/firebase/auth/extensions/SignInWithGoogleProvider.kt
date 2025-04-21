@@ -1,8 +1,8 @@
 package com.metacto.kmm.firebase.auth.extensions
 
 import cocoapods.FirebaseCore.FIRApp
-import cocoapods.GoogleSignIn.GIDConfiguration
-import cocoapods.GoogleSignIn.GIDSignIn
+import GoogleSignIn.GIDConfiguration
+import GoogleSignIn.GIDSignIn
 import com.metacto.kmm.auth.common.AuthenticationMetadata
 import com.metacto.kmm.auth.common.ProfileMetadata
 import com.metacto.kmm.firebase.auth.extensions.mappers.mapError
@@ -32,7 +32,7 @@ class SignInWithGoogleProvider(
                             it.localizedDescription.mapError(it.code.toInt())
                         )
                     }
-
+                    val accessToken = result?.user?.accessToken?.tokenString
                     result?.user?.idToken?.tokenString?.let { idToken ->
                         val profile = ProfileMetadata(
                             firstName = result.user.profile?.givenName,
@@ -42,7 +42,7 @@ class SignInWithGoogleProvider(
                             pictureUrl = result.user.profile?.imageURLWithDimension(1080u)?.absoluteString
                         )
 
-                        continuation.resume(AuthenticationMetadata(idToken, profile))
+                        continuation.resume(AuthenticationMetadata(idToken, profile, accessToken))
                     }
                 }
             )

@@ -1,17 +1,11 @@
 package com.metacto.kmm.firebase.auth.extensions
 
-import com.metacto.kmm.auth.common.ProfileMetadata
-import dev.gitlive.firebase.auth.AuthCredential
-
-data class AuthenticationResult(
-    val authCredential: AuthCredential,
-    val profileMetadata: ProfileMetadata
-)
+import com.metacto.kmm.auth.common.AuthenticationMetadata
 
 interface AuthProvider {
     @Throws(Throwable::class)
-    suspend fun signInWithGoogle(): AuthenticationResult?
+    suspend fun signInWithGoogle(): AuthenticationMetadata?
 
     @Throws(Throwable::class)
-    suspend fun signInWithApple(): AuthenticationResult
+    suspend fun signInWithApple(): AuthenticationMetadata?
 }

@@ -6,7 +6,8 @@ object Libs {
 
     object Android {
         const val ACTIVITY_KTX = "androidx.activity:activity-ktx:${Versions.Libs.Android.ACTIVITY_KTX}"
-        const val FIREBASE_AUTH = "com.google.android.gms:play-services-auth:${Versions.Libs.Android.FIREBASE_AUTH}"
+        const val GOOGLE_AUTH = "com.google.android.gms:play-services-auth:${Versions.Libs.Android.GOOGLE_AUTH}"
+        const val FIREBASE_AUTH = "com.google.firebase:firebase-auth:${Versions.Libs.Android.FIREBASE_AUTH}"
     }
 
     object Firebase {

@@ -2,11 +2,13 @@
 
 package com.metacto.kmm.firebase.auth.extensions
 
-import cocoapods.FirebaseAuth.FIROAuthProvider
+//import cocoapods.FirebaseAuth.FIROAuthProvider
+import FirebaseAuth.FIRGoogleAuthProvider
 import com.metacto.kmm.auth.common.AuthOptions
 import com.metacto.kmm.auth.common.ProfileMetadata
 import dev.gitlive.firebase.auth.AuthCredential
 import kotlinx.cinterop.ExperimentalForeignApi
+import FirebaseAuth.FIROAuthProvider
 
 actual class AuthClient : AuthProvider {
     private lateinit var options: AuthOptions
@@ -19,11 +21,9 @@ actual class AuthClient : AuthProvider {
         )
 
         val result = googleProvider.start()
-        val credential = FIROAuthProvider.credentialWithProviderID(
-            providerID = "google.com",
-            IDToken = result.idToken,
-            rawNonce = "",
-            accessToken = null
+        val credential = FIRGoogleAuthProvider.credentialWithIDToken(
+            idToken = result.idToken,
+            accessToken = result.accessToken!!
         )
 
         return AuthenticationResult(

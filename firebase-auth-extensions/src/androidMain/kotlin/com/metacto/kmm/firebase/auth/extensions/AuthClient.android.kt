@@ -8,9 +8,11 @@ import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInClient
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
+import com.google.firebase.Firebase
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.auth.auth
 import com.metacto.kmm.auth.common.AuthOptions
-import dev.gitlive.firebase.auth.AuthCredential
+import com.metacto.kmm.auth.common.AuthenticationMetadata
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
@@ -18,7 +20,7 @@ import kotlin.coroutines.resumeWithException
 actual class AuthClient : AuthProvider {
     private lateinit var gClient: GoogleSignInClient
     private lateinit var options: AuthOptions
-    private var continuation: kotlin.coroutines.Continuation<AuthenticationResult?>? = null
+    private var continuation: kotlin.coroutines.Continuation<AuthenticationMetadata?>? = null
 
     actual fun init() {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -51,7 +53,12 @@ actual class AuthClient : AuthProvider {
                         phoneNumber = null,
                         pictureUrl = account.photoUrl?.toString()
                     )
-                    continuation?.resume(AuthenticationResult(AuthCredential(credential), profile))
+
+                    val firebaseUser = Firebase.auth.signInWithCredential(credential)
+                    val idToken = firebaseUser.result.user?.getIdToken(true)?.result?.token
+                        ?: throw Throwable("Failed to get ID token")
+
+                    continuation?.resume(AuthenticationMetadata(idToken, profile, null))
                 } catch (throwable: Throwable) {
                     continuation?.resumeWithException(throwable)
                 }
@@ -59,11 +66,11 @@ actual class AuthClient : AuthProvider {
         }
     }
 
-    override suspend fun signInWithApple(): AuthenticationResult{
+    override suspend fun signInWithApple(): AuthenticationMetadata{
         throw NotImplementedError("signInWithApple is not supported on Android")
     }
 
-    override suspend fun signInWithGoogle(): AuthenticationResult? {
+    override suspend fun signInWithGoogle(): AuthenticationMetadata? {
         return suspendCancellableCoroutine { continuation ->
             this.continuation = continuation
             options.launcher.launch(gClient.signInIntent)

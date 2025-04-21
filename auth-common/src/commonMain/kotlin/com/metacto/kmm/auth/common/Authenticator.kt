@@ -26,7 +26,7 @@ interface Authenticator {
     suspend fun resendVerificationCode(phoneVerificationProvider: PhoneVerifierProvider): PhoneVerifierMetadata
 
     @Throws(Throwable::class)
-    suspend fun verifyPhoneVerification(code: String): String
+    suspend fun verifyPhoneOTP(code: String): String
 
     @Throws(Throwable::class)
     suspend fun signOut()

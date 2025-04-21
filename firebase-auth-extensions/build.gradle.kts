@@ -3,11 +3,12 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
 import org.jetbrains.kotlin.konan.properties.Properties
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.net.URI
 
 plugins {
     id(Plugins.ANDROID_LIBRARY)
     kotlin(Plugins.Kotlin.MULTIPLATFORM)
-    kotlin(Plugins.COCOAPODS)
+    id(Plugins.SPM_4_KMP) version Versions.Plugins.SPM_4_KMP
     id(Plugins.MAVEN_PUBLISH)
     id(Plugins.SIGNING)
 }
@@ -21,6 +22,7 @@ val libName = "firebase-auth-extensions"
 
 version = currentVersion
 group = Constants.GROUP_ID
+val authSDKCinteropName = "FirebaseAuthKMMSDK"
 
 kotlin {
     androidTarget {
@@ -43,26 +45,49 @@ kotlin {
             xcf.add(this)
             isStatic = true
         }
-    }
-
-    cocoapods {
-        version = "1.0.0"
-        summary = "Some description for the Shared Module"
-        homepage = "Link to the Shared Module homepage"
-        ios.deploymentTarget = "14.1"
-        podfile = project.file("../iosApp/Podfile")
-
-        pod("FirebaseAuth", linkOnly = true)
-        pod("GoogleSignIn")
-
-        framework {
-            baseName = libName
-            isStatic = true
+        it.compilations {
+            val main by getting {
+                // Choose the cinterop name
+                cinterops.create(authSDKCinteropName)
+            }
         }
     }
 
-    js(IR) {
-        nodejs()
+//    cocoapods {
+//        version = "1.0.0"
+//        summary = "Some description for the Shared Module"
+//        homepage = "Link to the Shared Module homepage"
+//        ios.deploymentTarget = "14.1"
+//        podfile = project.file("../iosApp/Podfile")
+//
+//        pod("FirebaseAuth", linkOnly = true)
+//        pod("GoogleSignIn")
+//
+//        framework {
+//            baseName = libName
+//            isStatic = true
+//        }
+//    }
+
+    swiftPackageConfig {
+        create(authSDKCinteropName) {
+            dependency {
+                remotePackageVersion(
+                    url = URI("https://github.com/firebase/firebase-ios-sdk.git"),
+                    products = {
+                        add("FirebaseAuth", exportToKotlin = true)
+                    },
+                    version = "11.11.0",
+                )
+                remotePackageVersion(
+                    url = URI("https://github.com/google/GoogleSignIn-iOS.git"),
+                    products = {
+                        add("GoogleSignIn", exportToKotlin = true)
+                    },
+                    version = "8.0.0",
+                )
+            }
+        }
     }
 
     metadata {
@@ -73,12 +98,13 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            implementation(Libs.Firebase.AUTH)
+//            implementation(Libs.Firebase.AUTH)
             implementation(Libs.KotlinX.COROUTINES)
             implementation(project(":auth-common"))
         }
 
         androidMain.dependencies {
+            api(Libs.Android.GOOGLE_AUTH)
             api(Libs.Android.FIREBASE_AUTH)
         }
     }
