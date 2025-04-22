@@ -11,7 +11,6 @@ object Libs {
     }
 
     object Firebase {
-        const val AUTH = "dev.gitlive:firebase-auth:${Versions.Libs.Firebase.AUTH}"
         const val CONFIG = "dev.gitlive:firebase-config:${Versions.Libs.Firebase.CONFIG}"
     }
 }

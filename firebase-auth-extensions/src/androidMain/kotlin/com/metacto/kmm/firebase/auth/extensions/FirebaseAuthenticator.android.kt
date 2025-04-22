@@ -49,9 +49,12 @@ actual suspend fun FirebaseAuthenticator.verifyPhoneNumber(otp: String, verifica
 }
 
 @Throws(Throwable::class)
-actual suspend fun FirebaseAuthenticator.sendSignInOTPToPhone(phoneNumber: String, phoneVerifierProvider: PhoneVerifierProvider): PhoneVerifierMetadata {
-    return suspendCancellableCoroutine { continuation ->
+actual suspend fun FirebaseAuthenticator.sendSignInOTPToPhone(phoneNumber: String, phoneVerifierProvider: PhoneVerifierProvider?): PhoneVerifierMetadata {
+    if (phoneVerifierProvider == null) {
+        throw Throwable("Phone verifier provider cannot be null")
+    }
 
+    return suspendCancellableCoroutine { continuation ->
         val options = PhoneAuthOptions.newBuilder(Firebase.auth)
             .setPhoneNumber(phoneNumber)
             .setTimeout(phoneVerifierProvider.timeout, phoneVerifierProvider.unit)

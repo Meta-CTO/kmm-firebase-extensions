@@ -22,11 +22,11 @@ class SignInWithAppleProvider(
 ) : NSObject(),
     ASAuthorizationControllerDelegateProtocol,
     ASAuthorizationControllerPresentationContextProvidingProtocol {
-    private var continunation: kotlin.coroutines.Continuation<AuthenticationMetadata>? = null
+    private var continuation: kotlin.coroutines.Continuation<AuthenticationMetadata>? = null
 
     suspend fun start(): AuthenticationMetadata {
         return suspendCancellableCoroutine { continuation ->
-            continunation = continuation
+            this.continuation = continuation
             val request = ASAuthorizationAppleIDProvider().createRequest()
             request.requestedScopes = listOf(ASAuthorizationScopeEmail, ASAuthorizationScopeFullName)
 
@@ -56,15 +56,15 @@ class SignInWithAppleProvider(
         )
 
         idToken?.let {
-            continunation?.resume(AuthenticationMetadata(it, profile))
-        } ?: continunation?.resumeWithException("idToken cannot be null".mapError(-1))
+            continuation?.resume(AuthenticationMetadata(it, profile))
+        } ?: continuation?.resumeWithException("idToken cannot be null".mapError(-1))
     }
 
     override fun authorizationController(
         controller: ASAuthorizationController,
         didCompleteWithError: NSError
     ) {
-        continunation?.resumeWithException(
+        continuation?.resumeWithException(
             didCompleteWithError.localizedDescription.mapError(didCompleteWithError.code.toInt())
         )
     }

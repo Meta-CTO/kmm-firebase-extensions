@@ -24,11 +24,10 @@ expect suspend fun FirebaseAuthenticator.signInWithEmailLink(email: String, link
 expect suspend fun FirebaseAuthenticator.verifyPhoneNumber(otp: String, verificationId: String): String
 
 @Throws(Throwable::class)
-expect suspend fun FirebaseAuthenticator.sendSignInOTPToPhone(phoneNumber: String, phoneVerifierProvider: PhoneVerifierProvider): PhoneVerifierMetadata
+expect suspend fun FirebaseAuthenticator.sendSignInOTPToPhone(phoneNumber: String, phoneVerifierProvider: PhoneVerifierProvider?): PhoneVerifierMetadata
 
 @Throws(Throwable::class)
 expect suspend fun FirebaseAuthenticator.logout()
-
 
 class FirebaseAuthenticator(
     private val actionCodeSettings: ActionCodeSettings,
@@ -76,7 +75,7 @@ class FirebaseAuthenticator(
     @Throws(Throwable::class)
     override suspend fun sendPhoneVerification(
         phoneNumber: String,
-        phoneVerificationProvider: PhoneVerifierProvider
+        phoneVerificationProvider: PhoneVerifierProvider?
     ): PhoneVerifierMetadata {
         val metadata = sendSignInOTPToPhone(phoneNumber, phoneVerificationProvider)
 
@@ -94,7 +93,7 @@ class FirebaseAuthenticator(
     }
 
     @Throws(Throwable::class)
-    override suspend fun resendVerificationCode(phoneVerificationProvider: PhoneVerifierProvider): PhoneVerifierMetadata {
+    override suspend fun resendVerificationCode(phoneVerificationProvider: PhoneVerifierProvider?): PhoneVerifierMetadata {
         val phoneNumber =
             firebaseAuthPreferences.getSecureString(Constants.VERIFICATION_PHONE_NUMBER)
         if (phoneNumber.isNullOrEmpty()) throw Throwable("Invalid phone number")

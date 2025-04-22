@@ -2,6 +2,7 @@
 
 package com.metacto.kmm.firebase.auth.extensions
 
+import FirebaseAuth.FIRAuth
 import FirebaseAuth.FIRGoogleAuthProvider
 import com.metacto.kmm.auth.common.AuthOptions
 import kotlinx.cinterop.ExperimentalForeignApi
@@ -9,6 +10,7 @@ import FirebaseAuth.FIROAuthProvider
 import com.metacto.kmm.auth.common.AuthenticationMetadata
 import kotlinx.coroutines.suspendCancellableCoroutine
 
+@OptIn(ExperimentalForeignApi::class)
 actual class AuthClient : AuthProvider {
     private lateinit var options: AuthOptions
 
@@ -22,11 +24,11 @@ actual class AuthClient : AuthProvider {
         val result = googleProvider.start()
         val credential = FIRGoogleAuthProvider.credentialWithIDToken(
             idToken = result.idToken,
-            accessToken = result.accessToken!!
+            accessToken = result.accessToken.orEmpty()
         )
 
         return suspendCancellableCoroutine { cont ->
-            FirebaseAuth.FIRAuth.auth().signInWithCredential(credential) { data, nsError ->
+            FIRAuth.auth().signInWithCredential(credential) { data, nsError ->
                 if (nsError != null) {
                     cont.exceptionIfActive(Throwable(nsError.localizedDescription))
                 } else {
@@ -62,7 +64,7 @@ actual class AuthClient : AuthProvider {
         )
 
         return suspendCancellableCoroutine { cont ->
-            FirebaseAuth.FIRAuth.auth().signInWithCredential(credential) { data, nsError ->
+            FIRAuth.auth().signInWithCredential(credential) { data, nsError ->
                 if (nsError != null) {
                     cont.exceptionIfActive(Throwable(nsError.localizedDescription))
                 } else {

@@ -3,24 +3,21 @@
 package com.metacto.kmm.firebase.auth.extensions
 
 import FirebaseAuth.FIRActionCodeSettings
+import FirebaseAuth.FIRAuth
+import FirebaseAuth.FIRUser
 import com.metacto.kmm.auth.common.PhoneVerifierMetadata
 import com.metacto.kmm.auth.common.PhoneVerifierProvider
 import com.metacto.kmm.firebase.auth.ActionCodeSettings
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.Foundation.NSError
 import platform.Foundation.NSURL
 
 @Throws(Throwable::class)
 actual suspend fun FirebaseAuthenticator.getIdToken(forceRefresh: Boolean): String {
-    return suspendCancellableCoroutine { cont ->
-        FirebaseAuth.FIRAuth.auth().currentUser()
-            ?.getIDTokenResultForcingRefresh(forceRefresh) { token, nsError ->
-                if (nsError != null) {
-                    cont.exceptionIfActive(Throwable(nsError.localizedDescription))
-                } else if (token != null) {
-                    cont.resumeIfActive(token.token())
-                }
-            }
+    return suspendCancellableCoroutine { continuation ->
+        getIDTokenFromUser(FIRAuth.auth().currentUser(), continuation)
     }
 }
 
@@ -29,8 +26,7 @@ actual suspend fun FirebaseAuthenticator.sendSignInLinkToEmail(
     email: String,
     actionCodeSettings: ActionCodeSettings
 ) {
-    return suspendCancellableCoroutine { cont ->
-        // Convert ActionCodeSettings to the iOS equivalent
+    return suspendCancellableCoroutine { continuation ->
         val actionCodeSettingsIOS = FIRActionCodeSettings()
         actionCodeSettingsIOS.setURL(NSURL(actionCodeSettings.url))
         actionCodeSettingsIOS.setHandleCodeInApp(actionCodeSettings.canHandleCodeInApp)
@@ -38,11 +34,11 @@ actual suspend fun FirebaseAuthenticator.sendSignInLinkToEmail(
         actionCodeSettingsIOS.setAndroidPackageName(actionCodeSettings.androidPackageName)
         actionCodeSettingsIOS.setAndroidInstallIfNotAvailable(actionCodeSettings.installIfNotAvailable)
 
-        FirebaseAuth.FIRAuth.auth().sendSignInLinkToEmail(email, actionCodeSettingsIOS) { nsError ->
-            if (nsError != null) {
-                cont.exceptionIfActive(Throwable(nsError.localizedDescription))
+        FIRAuth.auth().sendSignInLinkToEmail(email, actionCodeSettingsIOS) { error ->
+            if (error != null) {
+                continuation.exceptionIfActive(Throwable(error.localizedDescription))
             } else {
-                cont.resumeIfActive(Unit)
+                continuation.resumeIfActive(Unit)
             }
         }
     }
@@ -50,18 +46,12 @@ actual suspend fun FirebaseAuthenticator.sendSignInLinkToEmail(
 
 @Throws(Throwable::class)
 actual suspend fun FirebaseAuthenticator.signInWithEmailLink(email: String, link: String): String {
-    return suspendCancellableCoroutine { cont ->
-        FirebaseAuth.FIRAuth.auth().signInWithEmail(email, link) { data, nsError ->
-            if (nsError != null) {
-                cont.exceptionIfActive(Throwable(nsError.localizedDescription))
+    return suspendCancellableCoroutine { continuation ->
+        FIRAuth.auth().signInWithEmail(email, link) { result, error ->
+            if (error != null) {
+                continuation.exceptionIfActive(Throwable(error.localizedDescription))
             } else {
-                data?.user()?.getIDTokenForcingRefresh(true) { token, nsError ->
-                    if (nsError != null) {
-                        cont.exceptionIfActive(Throwable(nsError.localizedDescription))
-                    } else if (token != null) {
-                        cont.resumeIfActive(token)
-                    }
-                }
+                getIDTokenFromUser(result?.user(), continuation)
             }
         }
     }
@@ -69,19 +59,13 @@ actual suspend fun FirebaseAuthenticator.signInWithEmailLink(email: String, link
 
 @Throws(Throwable::class)
 actual suspend fun FirebaseAuthenticator.verifyPhoneNumber(otp: String, verificationId: String): String {
-    return suspendCancellableCoroutine { cont ->
+    return suspendCancellableCoroutine { continuation ->
         val credential = FirebaseAuth.FIRPhoneAuthProvider.provider().credentialWithVerificationID(verificationId, otp)
-        FirebaseAuth.FIRAuth.auth().signInWithCredential(credential) { data, nsError ->
-            if (nsError != null) {
-                cont.exceptionIfActive(Throwable(nsError.localizedDescription))
+        FIRAuth.auth().signInWithCredential(credential) { result, error ->
+            if (error != null) {
+                continuation.exceptionIfActive(Throwable(error.localizedDescription))
             } else {
-                data?.user()?.getIDTokenForcingRefresh(true) { token, nsError ->
-                    if (nsError != null) {
-                        cont.exceptionIfActive(Throwable(nsError.localizedDescription))
-                    } else if (token != null) {
-                        cont.resumeIfActive(token)
-                    }
-                }
+                getIDTokenFromUser(result?.user(), continuation)
             }
         }
     }
@@ -90,14 +74,16 @@ actual suspend fun FirebaseAuthenticator.verifyPhoneNumber(otp: String, verifica
 @Throws(Throwable::class)
 actual suspend fun FirebaseAuthenticator.sendSignInOTPToPhone(
     phoneNumber: String,
-    phoneVerifierProvider: PhoneVerifierProvider
+    phoneVerifierProvider: PhoneVerifierProvider?
 ): PhoneVerifierMetadata {
-    return suspendCancellableCoroutine { cont ->
-        FirebaseAuth.FIRPhoneAuthProvider.provider().verifyPhoneNumber(phoneNumber, null) { verificationID, nsError ->
-            if (nsError != null) {
-                cont.exceptionIfActive(Throwable(nsError.localizedDescription))
+    return suspendCancellableCoroutine { continuation ->
+        FirebaseAuth.FIRPhoneAuthProvider.provider().verifyPhoneNumber(phoneNumber, null) { verificationID, error ->
+            if (error != null) {
+                continuation.exceptionIfActive(Throwable(error.localizedDescription))
             } else if (verificationID != null) {
-                cont.resumeIfActive(PhoneVerifierMetadata(verificationID, phoneNumber))
+                continuation.resumeIfActive(PhoneVerifierMetadata(verificationID, phoneNumber))
+            } else {
+                continuation.exceptionIfActive(Throwable("Unable to send sign in OTP due to unknown error"))
             }
         }
     }
@@ -105,5 +91,25 @@ actual suspend fun FirebaseAuthenticator.sendSignInOTPToPhone(
 
 @Throws(Throwable::class)
 actual suspend fun FirebaseAuthenticator.logout() {
-    FirebaseAuth.FIRAuth.auth().signOut(null)
+    FIRAuth.auth().signOut(null)
+}
+
+private fun getIDTokenFromUser(
+    user: FIRUser?,
+    continuation: CancellableContinuation<String>
+) {
+    if (user == null) {
+        continuation.exceptionIfActive(Throwable("Unable to get id token from a null user"))
+        return
+    }
+
+    user.getIDTokenForcingRefresh(true) { token, error ->
+        if (error != null) {
+            continuation.exceptionIfActive(Throwable(error.localizedDescription))
+        } else if (token != null) {
+            continuation.resumeIfActive(token)
+        } else {
+            continuation.exceptionIfActive(Throwable("Unable to get id token due to unknown error"))
+        }
+    }
 }

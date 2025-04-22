@@ -20,10 +20,10 @@ interface Authenticator {
     suspend fun verifyEmailLink(link: String): String
 
     @Throws(Throwable::class)
-    suspend fun sendPhoneVerification(phoneNumber: String, phoneVerificationProvider: PhoneVerifierProvider): PhoneVerifierMetadata
+    suspend fun sendPhoneVerification(phoneNumber: String, phoneVerificationProvider: PhoneVerifierProvider?): PhoneVerifierMetadata
 
     @Throws(Throwable::class)
-    suspend fun resendVerificationCode(phoneVerificationProvider: PhoneVerifierProvider): PhoneVerifierMetadata
+    suspend fun resendVerificationCode(phoneVerificationProvider: PhoneVerifierProvider?): PhoneVerifierMetadata
 
     @Throws(Throwable::class)
     suspend fun verifyPhoneOTP(code: String): String

@@ -53,28 +53,13 @@ kotlin {
         }
     }
 
-//    cocoapods {
-//        version = "1.0.0"
-//        summary = "Some description for the Shared Module"
-//        homepage = "Link to the Shared Module homepage"
-//        ios.deploymentTarget = "14.1"
-//        podfile = project.file("../iosApp/Podfile")
-//
-//        pod("FirebaseAuth", linkOnly = true)
-//        pod("GoogleSignIn")
-//
-//        framework {
-//            baseName = libName
-//            isStatic = true
-//        }
-//    }
-
     swiftPackageConfig {
         create(authSDKCinteropName) {
             dependency {
                 remotePackageVersion(
                     url = URI("https://github.com/firebase/firebase-ios-sdk.git"),
                     products = {
+                        add("FirebaseCore", exportToKotlin = true)
                         add("FirebaseAuth", exportToKotlin = true)
                     },
                     version = "11.11.0",
