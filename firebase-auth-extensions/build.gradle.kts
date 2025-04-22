@@ -22,7 +22,7 @@ val libName = "firebase-auth-extensions"
 
 version = currentVersion
 group = Constants.GROUP_ID
-val firebaseCinteropName = "FirebaseSDK"
+val dependencies = "Dependencies"
 
 kotlin {
     androidTarget {
@@ -46,13 +46,13 @@ kotlin {
         }
         it.compilations {
             val main by getting {
-                cinterops.create(firebaseCinteropName)
+                cinterops.create(dependencies)
             }
         }
     }
 
     swiftPackageConfig {
-        create(firebaseCinteropName) {
+        create(dependencies) {
             dependency {
                 remotePackageVersion(
                     url = URI("https://github.com/firebase/firebase-ios-sdk.git"),

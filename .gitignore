@@ -15,4 +15,4 @@ xcuserdata
 local.properties
 iosApp/Pods
 .kotlin
-exportedFirebaseSDK
+exportedDependencies
