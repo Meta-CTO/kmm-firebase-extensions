@@ -22,7 +22,7 @@ val libName = "firebase-auth-extensions"
 
 version = currentVersion
 group = Constants.GROUP_ID
-val authSDKCinteropName = "FirebaseAuthKMMSDK"
+val firebaseCinteropName = "FirebaseSDK"
 
 kotlin {
     androidTarget {
@@ -43,18 +43,16 @@ kotlin {
         it.binaries.framework(libName) {
             baseName = libName
             xcf.add(this)
-            isStatic = true
         }
         it.compilations {
             val main by getting {
-                // Choose the cinterop name
-                cinterops.create(authSDKCinteropName)
+                cinterops.create(firebaseCinteropName)
             }
         }
     }
 
     swiftPackageConfig {
-        create(authSDKCinteropName) {
+        create(firebaseCinteropName) {
             dependency {
                 remotePackageVersion(
                     url = URI("https://github.com/firebase/firebase-ios-sdk.git"),
@@ -83,7 +81,6 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-//            implementation(Libs.Firebase.AUTH)
             implementation(Libs.KotlinX.COROUTINES)
             implementation(project(":auth-common"))
         }
