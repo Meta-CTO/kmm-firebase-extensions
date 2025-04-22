@@ -7,6 +7,4 @@ actual interface PhoneVerifierProvider {
     val activity: Activity
     val timeout: Long
     val unit: TimeUnit
-    fun onCodeSent(verificationId: String, triggerResend: () -> Unit)
-    suspend fun getVerificationCode(): String
 }

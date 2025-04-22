@@ -9,25 +9,25 @@ import com.metacto.kmm.firebase.auth.ActionCodeSettings
 import com.metacto.kmm.firebase.auth.extensions.constants.Constants
 
 @Throws(Throwable::class)
-expect fun FirebaseAuthenticator.getIdToken(forceRefresh: Boolean): String
+expect suspend fun FirebaseAuthenticator.getIdToken(forceRefresh: Boolean): String
 
 @Throws(Throwable::class)
-expect fun FirebaseAuthenticator.sendSignInLinkToEmail(
+expect suspend fun FirebaseAuthenticator.sendSignInLinkToEmail(
     email: String,
     actionCodeSettings: ActionCodeSettings
 )
 
 @Throws(Throwable::class)
-expect fun FirebaseAuthenticator.signInWithEmailLink(email: String, link: String): String
+expect suspend fun FirebaseAuthenticator.signInWithEmailLink(email: String, link: String): String
 
 @Throws(Throwable::class)
-expect fun FirebaseAuthenticator.verifyPhoneNumber(otp: String, verificationId: String): String
+expect suspend fun FirebaseAuthenticator.verifyPhoneNumber(otp: String, verificationId: String): String
 
 @Throws(Throwable::class)
-expect fun FirebaseAuthenticator.sendSignInOTPToPhone(phoneNumber: String): PhoneVerifierMetadata
+expect suspend fun FirebaseAuthenticator.sendSignInOTPToPhone(phoneNumber: String, phoneVerifierProvider: PhoneVerifierProvider): PhoneVerifierMetadata
 
 @Throws(Throwable::class)
-expect fun FirebaseAuthenticator.logout()
+expect suspend fun FirebaseAuthenticator.logout()
 
 
 class FirebaseAuthenticator(
@@ -78,7 +78,7 @@ class FirebaseAuthenticator(
         phoneNumber: String,
         phoneVerificationProvider: PhoneVerifierProvider
     ): PhoneVerifierMetadata {
-        val metadata = sendSignInOTPToPhone(phoneNumber)
+        val metadata = sendSignInOTPToPhone(phoneNumber, phoneVerificationProvider)
 
         firebaseAuthPreferences.putSecureString(
             Constants.VERIFICATION_PHONE_NUMBER_VERIFICATION_ID,

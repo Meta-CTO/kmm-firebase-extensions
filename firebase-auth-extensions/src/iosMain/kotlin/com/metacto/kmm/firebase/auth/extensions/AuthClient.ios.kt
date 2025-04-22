@@ -2,20 +2,19 @@
 
 package com.metacto.kmm.firebase.auth.extensions
 
-//import cocoapods.FirebaseAuth.FIROAuthProvider
 import FirebaseAuth.FIRGoogleAuthProvider
 import com.metacto.kmm.auth.common.AuthOptions
-import com.metacto.kmm.auth.common.ProfileMetadata
-import dev.gitlive.firebase.auth.AuthCredential
 import kotlinx.cinterop.ExperimentalForeignApi
 import FirebaseAuth.FIROAuthProvider
+import com.metacto.kmm.auth.common.AuthenticationMetadata
+import kotlinx.coroutines.suspendCancellableCoroutine
 
 actual class AuthClient : AuthProvider {
     private lateinit var options: AuthOptions
 
     actual fun init() {}
 
-    override suspend fun signInWithGoogle(): AuthenticationResult {
+    override suspend fun signInWithGoogle(): AuthenticationMetadata {
         val googleProvider = SignInWithGoogleProvider(
             presentingViewController = options.presentingViewController
         )
@@ -26,13 +25,31 @@ actual class AuthClient : AuthProvider {
             accessToken = result.accessToken!!
         )
 
-        return AuthenticationResult(
-            AuthCredential(credential),
-            result.profileMetadata
-        )
+        return suspendCancellableCoroutine { cont ->
+            FirebaseAuth.FIRAuth.auth().signInWithCredential(credential) { data, nsError ->
+                if (nsError != null) {
+                    cont.exceptionIfActive(Throwable(nsError.localizedDescription))
+                } else {
+                    data?.user()?.getIDTokenForcingRefresh(true) { token, nsError ->
+                        if (nsError != null) {
+                            cont.exceptionIfActive(Throwable(nsError.localizedDescription))
+                        } else if (token != null) {
+                            cont.resumeIfActive(
+                                AuthenticationMetadata(
+                                    token,
+                                    result.profileMetadata
+                                )
+                            )
+                        } else {
+                            cont.exceptionIfActive(Throwable("Token cannot be null"))
+                        }
+                    }
+                }
+            }
+        }
     }
 
-    override suspend fun signInWithApple(): AuthenticationResult {
+    override suspend fun signInWithApple(): AuthenticationMetadata {
         val appleProvider = SignInWithAppleProvider(
             presentationAnchor = options.presentationAnchor
         )
@@ -41,13 +58,31 @@ actual class AuthClient : AuthProvider {
             providerID = "apple.com",
             IDToken = result.idToken,
             rawNonce = "",
-            accessToken = null
+            accessToken = result.accessToken.orEmpty()
         )
 
-        return AuthenticationResult(
-            AuthCredential(credential),
-            result.profileMetadata
-        )
+        return suspendCancellableCoroutine { cont ->
+            FirebaseAuth.FIRAuth.auth().signInWithCredential(credential) { data, nsError ->
+                if (nsError != null) {
+                    cont.exceptionIfActive(Throwable(nsError.localizedDescription))
+                } else {
+                    data?.user()?.getIDTokenForcingRefresh(true) { token, nsError ->
+                        if (nsError != null) {
+                            cont.exceptionIfActive(Throwable(nsError.localizedDescription))
+                        } else if (token != null) {
+                            cont.resumeIfActive(
+                                AuthenticationMetadata(
+                                    token,
+                                    result.profileMetadata
+                                )
+                            )
+                        } else {
+                            cont.exceptionIfActive(Throwable("Token cannot be null"))
+                        }
+                    }
+                }
+            }
+        }
     }
 
     actual fun setAuthOptions(options: AuthOptions) {
