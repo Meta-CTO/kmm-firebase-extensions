@@ -66,8 +66,8 @@ actual class AuthClient : AuthProvider {
         }
     }
 
-    override suspend fun signInWithApple(): AuthenticationMetadata{
-        throw NotImplementedError("signInWithApple is not supported on Android")
+    override suspend fun signInWithApple(): AuthenticationMetadata? {
+        TODO("Not yet implemented")
     }
 
     override suspend fun signInWithGoogle(): AuthenticationMetadata? {
