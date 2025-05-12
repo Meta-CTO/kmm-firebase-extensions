@@ -1,5 +1,7 @@
 import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.konan.properties.Properties
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -24,11 +26,6 @@ group = Constants.GROUP_ID
 
 kotlin {
     androidTarget {
-        compilations.all {
-            kotlinOptions {
-                jvmTarget = Versions.JAVA.VERSION.toString()
-            }
-        }
         publishLibraryVariants("debug", "release")
     }
 
@@ -43,11 +40,6 @@ kotlin {
             xcf.add(this)
             isStatic = true
         }
-    }
-
-
-    js(IR) {
-        nodejs()
     }
 
     metadata {
@@ -66,7 +58,11 @@ kotlin {
         }
     }
 
-    task("testClasses")
+    tasks.withType<KotlinCompile> {
+        compilerOptions {
+            jvmTarget.value(JvmTarget.JVM_17)
+        }
+    }
 }
 
 android {

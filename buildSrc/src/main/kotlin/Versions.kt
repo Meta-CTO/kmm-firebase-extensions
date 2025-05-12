@@ -28,12 +28,11 @@ object Versions {
             const val ACTIVITY_KTX = "1.9.0"
             const val GOOGLE_AUTH = "21.3.0"
             const val FIREBASE_AUTH = "23.2.0"
+            const val FIREBASE_CONFIG = "22.1.1"
         }
 
-        object Firebase {
-            const val AUTH = "1.12.0-metacto-5"
-            const val CONFIG = "1.10.4"
-        }
+        const val LOGGER = "1.0.15"
+        const val KMM_PREFERENCES = "1.0.3"
     }
 
     object Plugins {

@@ -1,13 +1,17 @@
 import com.android.build.gradle.internal.cxx.configure.gradleLocalProperties
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.plugin.mpp.apple.XCFramework
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.konan.properties.Properties
 import java.io.FileInputStream
 import java.io.FileOutputStream
+import java.net.URI
 
 plugins {
     id(Plugins.ANDROID_LIBRARY)
     kotlin(Plugins.Kotlin.MULTIPLATFORM)
     kotlin(Plugins.Kotlin.SERIALIZATION) version Versions.Kotlin.KOTLIN
+    id(Plugins.SPM_4_KMP) version Versions.Plugins.SPM_4_KMP
     id(Plugins.MAVEN_PUBLISH)
     id(Plugins.SIGNING)
 }
@@ -18,17 +22,13 @@ val versionProperties = Properties().apply {
 
 val currentVersion = versionProperties.getProperty(Constants.PUBLISH_VERSION) as String
 val libName = "firebase-remoteconfig-extensions"
+val dependencies = "Dependencies"
 
 version = currentVersion
 group = Constants.GROUP_ID
 
 kotlin {
     androidTarget {
-        compilations.all {
-            kotlinOptions {
-                jvmTarget = Versions.JAVA.VERSION.toString()
-            }
-        }
         publishLibraryVariants("debug", "release")
     }
 
@@ -43,11 +43,26 @@ kotlin {
             xcf.add(this)
             isStatic = true
         }
+        it.compilations {
+            val main by getting {
+                cinterops.create(dependencies)
+            }
+        }
     }
 
-
-    js(IR) {
-        nodejs()
+    swiftPackageConfig {
+        create(dependencies) {
+            dependency {
+                remotePackageVersion(
+                    url = URI("https://github.com/firebase/firebase-ios-sdk.git"),
+                    products = {
+                        add("FirebaseCore", exportToKotlin = false)
+                        add("FirebaseRemoteConfig", exportToKotlin = false)
+                    },
+                    version = "11.11.0",
+                )
+            }
+        }
     }
 
     metadata {
@@ -58,13 +73,22 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
-            api(Libs.Firebase.CONFIG)
+            implementation(Libs.KotlinX.COROUTINES)
             implementation(Libs.KotlinX.SERIALIZATION)
+            implementation(Libs.LOGGER)
+            implementation(Libs.KMM_PREFERENCES)
             implementation(project(":remote-config-common"))
+        }
+        androidMain.dependencies {
+            api(Libs.Android.FIREBASE_CONFIG)
         }
     }
 
-    task("testClasses")
+    tasks.withType<KotlinCompile> {
+        compilerOptions {
+            jvmTarget.value(JvmTarget.JVM_17)
+        }
+    }
 }
 
 android {

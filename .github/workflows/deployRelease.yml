@@ -37,7 +37,7 @@ jobs:
 
       - name: Update library version
         env:
-          PUBLISH_VERSION: 0.0.${{ github.run_number }}
+          PUBLISH_VERSION: 1.0.${{ github.run_number }}
         run: echo PUBLISH_VERSION=$PUBLISH_VERSION > ./versions.properties
 
       - name: Update local properties
