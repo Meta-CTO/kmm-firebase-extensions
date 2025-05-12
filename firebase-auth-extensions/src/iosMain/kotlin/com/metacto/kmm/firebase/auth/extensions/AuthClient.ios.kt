@@ -16,7 +16,7 @@ actual class AuthClient : AuthProvider {
 
     actual fun init() {}
 
-    override suspend fun signInWithGoogle(): AuthenticationMetadata? {
+    actual override suspend fun signInWithGoogle(): AuthenticationMetadata? {
         val googleProvider = SignInWithGoogleProvider(
             presentingViewController = options.presentingViewController
         )
@@ -51,7 +51,7 @@ actual class AuthClient : AuthProvider {
         }
     }
 
-    override suspend fun signInWithApple(): AuthenticationMetadata? {
+    actual override suspend fun signInWithApple(): AuthenticationMetadata? {
         val appleProvider = SignInWithAppleProvider(
             presentationAnchor = options.presentationAnchor
         )

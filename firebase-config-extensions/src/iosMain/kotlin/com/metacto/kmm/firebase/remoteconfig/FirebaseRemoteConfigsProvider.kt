@@ -26,7 +26,7 @@ actual class FirebaseRemoteConfigsProvider actual constructor(
     private val firebaseConfigs = Dependencies.FirebaseRemoteConfigsProvider()
     private val logger = Logger(RemoteConfigConstants.CACHED_REMOTE_CONFIGS)
 
-    override suspend fun init(minFetchIntervalSeconds: Long) {
+    actual override suspend fun init(minFetchIntervalSeconds: Long) {
         setSettings(minFetchIntervalSeconds)
         loadDefaults()
         fetchConfigsFromRemote()
@@ -127,13 +127,13 @@ actual class FirebaseRemoteConfigsProvider actual constructor(
         }
     }
 
-    override fun getString(key: String): String? {
+    actual override fun getString(key: String): String? {
         val value = firebaseConfigs.getStringForKey(key)
         return if (value == RemoteConfigConstants.DEF_STRING_VALUE) null else value
     }
 
     @Throws(Throwable::class)
-    override suspend fun forceGetString(key: String): String? {
+    actual override suspend fun forceGetString(key: String): String? {
         val value = getString(key)
         if (value == null || value == RemoteConfigConstants.DEF_STRING_VALUE) {
             fetchConfigsFromRemote()
@@ -142,13 +142,13 @@ actual class FirebaseRemoteConfigsProvider actual constructor(
         return getString(key)
     }
 
-    override fun getBoolean(key: String): Boolean? {
+    actual override fun getBoolean(key: String): Boolean? {
         val value = firebaseConfigs.getBoolForKey(key)
         return if (value == RemoteConfigConstants.DEF_BOOL_VALUE) null else value
     }
 
     @Throws(Throwable::class)
-    override suspend fun forceGetBoolean(key: String): Boolean? {
+    actual override suspend fun forceGetBoolean(key: String): Boolean? {
         val value = getBoolean(key)
         if (value == null || value == RemoteConfigConstants.DEF_BOOL_VALUE) {
             fetchConfigsFromRemote()
@@ -157,13 +157,13 @@ actual class FirebaseRemoteConfigsProvider actual constructor(
         return getBoolean(key)
     }
 
-    override fun getDouble(key: String): Double? {
+    actual override fun getDouble(key: String): Double? {
         val value = firebaseConfigs.getDoubleForKey(key)
         return if (value == RemoteConfigConstants.DEF_DOUBLE_VALUE) null else value
     }
 
     @Throws(Throwable::class)
-    override suspend fun forceGetDouble(key: String): Double? {
+    actual override suspend fun forceGetDouble(key: String): Double? {
         val value = getDouble(key)
         if (value == null || value == RemoteConfigConstants.DEF_DOUBLE_VALUE) {
             fetchConfigsFromRemote()
@@ -172,13 +172,13 @@ actual class FirebaseRemoteConfigsProvider actual constructor(
         return getDouble(key)
     }
 
-    override fun getLong(key: String): Long? {
+    actual override fun getLong(key: String): Long? {
         val value = firebaseConfigs.getLongForKey(key)
         return if (value == RemoteConfigConstants.DEF_LONG_VALUE) null else value
     }
 
     @Throws(Throwable::class)
-    override suspend fun forceGetLong(key: String): Long? {
+    actual override suspend fun forceGetLong(key: String): Long? {
         val value = getLong(key)
         if (value == null || value == RemoteConfigConstants.DEF_LONG_VALUE) {
             fetchConfigsFromRemote()
@@ -187,13 +187,13 @@ actual class FirebaseRemoteConfigsProvider actual constructor(
         return getLong(key)
     }
 
-    override fun getInt(key: String): Int? {
+    actual override fun getInt(key: String): Int? {
         val value = firebaseConfigs.getIntForKey(key)
         return if (value == RemoteConfigConstants.DEF_LONG_VALUE) null else value.toInt()
     }
 
     @Throws(Throwable::class)
-    override suspend fun forceGetInt(key: String): Int? {
+    actual override suspend fun forceGetInt(key: String): Int? {
         val value = getInt(key)
         if (value == null || value == RemoteConfigConstants.DEF_INT_VALUE) {
             fetchConfigsFromRemote()

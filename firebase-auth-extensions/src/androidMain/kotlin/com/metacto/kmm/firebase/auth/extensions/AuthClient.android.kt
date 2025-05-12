@@ -66,11 +66,11 @@ actual class AuthClient : AuthProvider {
         }
     }
 
-    override suspend fun signInWithApple(): AuthenticationMetadata? {
+    actual override suspend fun signInWithApple(): AuthenticationMetadata? {
         TODO("Not yet implemented")
     }
 
-    override suspend fun signInWithGoogle(): AuthenticationMetadata? {
+    actual override suspend fun signInWithGoogle(): AuthenticationMetadata? {
         return suspendCancellableCoroutine { continuation ->
             this.continuation = continuation
             options.launcher.launch(gClient.signInIntent)
