@@ -4,6 +4,7 @@ package com.metacto.kmm.firebase.auth.extensions
 
 import FirebaseAuth.FIRActionCodeSettings
 import FirebaseAuth.FIRAuth
+import FirebaseAuth.FIRAuthDataResult
 import FirebaseAuth.FIRUser
 import com.metacto.kmm.auth.common.PhoneVerifierMetadata
 import com.metacto.kmm.auth.common.PhoneVerifierProvider
@@ -28,7 +29,7 @@ actual suspend fun FirebaseAuthenticator.sendSignInLinkToEmail(
 ) {
     return suspendCancellableCoroutine { continuation ->
         val actionCodeSettingsIOS = FIRActionCodeSettings()
-        actionCodeSettingsIOS.setURL(NSURL(actionCodeSettings.url))
+        actionCodeSettingsIOS.setURL(NSURL(string = actionCodeSettings.url))
         actionCodeSettingsIOS.setHandleCodeInApp(actionCodeSettings.canHandleCodeInApp)
         actionCodeSettingsIOS.setIOSBundleID(actionCodeSettings.iOSBundleId)
         actionCodeSettingsIOS.setAndroidPackageName(actionCodeSettings.androidPackageName)
@@ -47,7 +48,7 @@ actual suspend fun FirebaseAuthenticator.sendSignInLinkToEmail(
 @Throws(Throwable::class)
 actual suspend fun FirebaseAuthenticator.signInWithEmailLink(email: String, link: String): String {
     return suspendCancellableCoroutine { continuation ->
-        FIRAuth.auth().signInWithEmail(email, link) { result, error ->
+        FIRAuth.auth().signInWithEmail(email = email, link = link) { result: FIRAuthDataResult?, error: NSError? ->
             if (error != null) {
                 continuation.exceptionIfActive(Throwable(error.localizedDescription))
             } else {
@@ -61,7 +62,7 @@ actual suspend fun FirebaseAuthenticator.signInWithEmailLink(email: String, link
 actual suspend fun FirebaseAuthenticator.verifyPhoneNumber(otp: String, verificationId: String): String {
     return suspendCancellableCoroutine { continuation ->
         val credential = FirebaseAuth.FIRPhoneAuthProvider.provider().credentialWithVerificationID(verificationId, otp)
-        FIRAuth.auth().signInWithCredential(credential) { result, error ->
+        FIRAuth.auth().signInWithCredential(credential) { result: FIRAuthDataResult?, error: NSError? ->
             if (error != null) {
                 continuation.exceptionIfActive(Throwable(error.localizedDescription))
             } else {
