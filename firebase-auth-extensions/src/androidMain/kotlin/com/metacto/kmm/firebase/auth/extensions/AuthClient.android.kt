@@ -54,11 +54,21 @@ actual class AuthClient : AuthProvider {
                         pictureUrl = account.photoUrl?.toString()
                     )
 
-                    val firebaseUser = Firebase.auth.signInWithCredential(credential)
-                    val idToken = firebaseUser.result.user?.getIdToken(true)?.result?.token
-                        ?: throw Throwable("Failed to get ID token")
-
-                    continuation?.resume(AuthenticationMetadata(idToken, profile, null))
+                    Firebase.auth.signInWithCredential(credential).addOnSuccessListener { result ->
+                        val user = result.user
+                        if (user != null) {
+                            user.getIdToken(true).addOnSuccessListener { tokenResult ->
+                                val idToken = tokenResult.token.orEmpty()
+                                continuation?.resume(AuthenticationMetadata(idToken, profile, null))
+                            }.addOnFailureListener { error ->
+                                continuation?.resumeWithException(error)
+                            }
+                        } else {
+                            continuation?.resume(null)
+                        }
+                    }.addOnFailureListener { error ->
+                        continuation?.resumeWithException(error)
+                    }
                 } catch (throwable: Throwable) {
                     continuation?.resumeWithException(throwable)
                 }
