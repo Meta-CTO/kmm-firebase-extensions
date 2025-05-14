@@ -13,8 +13,18 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 
 @Throws(Throwable::class)
 actual suspend fun FirebaseAuthenticator.getIdToken(forceRefresh: Boolean): String {
-    return Firebase.auth.currentUser?.getIdToken(forceRefresh)?.result?.token
-        ?: throw Throwable("Failed to get ID token")
+    return suspendCancellableCoroutine { cont ->
+        Firebase.auth.currentUser?.getIdToken(true)?.addOnSuccessListener {
+            val token = it.token
+            if (token != null) {
+                cont.resumeIfActive(token)
+            } else {
+                cont.exceptionIfActive(Throwable("Token cannot be null"))
+            }
+        }?.addOnFailureListener { error ->
+            cont.exceptionIfActive(error)
+        }
+    }
 }
 
 @Throws(Throwable::class)
@@ -36,20 +46,63 @@ actual suspend fun FirebaseAuthenticator.sendSignInLinkToEmail(
 }
 
 @Throws(Throwable::class)
-actual suspend fun FirebaseAuthenticator.signInWithEmailLink(email: String, link: String): String {
-    return Firebase.auth.signInWithEmailLink(email, link).result?.user?.getIdToken(true)?.result?.token
-        ?: throw Throwable("Failed to sign in with email link")
+actual suspend fun FirebaseAuthenticator.signInWithEmailLink(
+    email: String,
+    link: String
+): String {
+    return suspendCancellableCoroutine { cont ->
+        Firebase.auth.signInWithEmailLink(
+            email,
+            link
+        ).addOnSuccessListener {
+            val user = it.user
+            if (user != null) {
+                user.getIdToken(true).addOnSuccessListener { tokenResult ->
+                    val idToken = tokenResult.token.orEmpty()
+                    cont.resumeIfActive(idToken)
+                }.addOnFailureListener { error ->
+                    cont.exceptionIfActive(error)
+                }
+            } else {
+                cont.exceptionIfActive(Throwable("User cannot be null"))
+            }
+        }.addOnFailureListener { error ->
+            cont.exceptionIfActive(error)
+        }
+    }
 }
 
 @Throws(Throwable::class)
-actual suspend fun FirebaseAuthenticator.verifyPhoneNumber(otp: String, verificationId: String): String {
-    val credential = PhoneAuthProvider.getCredential(verificationId, otp)
-    return Firebase.auth.signInWithCredential(credential).result?.user?.getIdToken(true)?.result?.token
-        ?: throw Throwable("Failed to verify phone number")
+actual suspend fun FirebaseAuthenticator.verifyPhoneNumber(
+    otp: String,
+    verificationId: String
+): String {
+    return suspendCancellableCoroutine { cont ->
+        val credential = PhoneAuthProvider.getCredential(verificationId, otp)
+        Firebase.auth.signInWithCredential(credential).addOnSuccessListener { result ->
+            val user = result.user
+            if (user != null) {
+                user.getIdToken(true).addOnSuccessListener { tokenResult ->
+                    val idToken = tokenResult.token.orEmpty()
+                    cont.resumeIfActive(idToken)
+                }.addOnFailureListener { error ->
+                    cont.exceptionIfActive(error)
+                }
+            } else {
+                cont.exceptionIfActive(Throwable("User cannot be null"))
+            }
+        }.addOnFailureListener { error ->
+            cont.exceptionIfActive(error)
+
+        }
+    }
 }
 
 @Throws(Throwable::class)
-actual suspend fun FirebaseAuthenticator.sendSignInOTPToPhone(phoneNumber: String, phoneVerifierProvider: PhoneVerifierProvider?): PhoneVerifierMetadata {
+actual suspend fun FirebaseAuthenticator.sendSignInOTPToPhone(
+    phoneNumber: String,
+    phoneVerifierProvider: PhoneVerifierProvider?
+): PhoneVerifierMetadata {
     if (phoneVerifierProvider == null) {
         throw Throwable("Phone verifier provider cannot be null")
     }
