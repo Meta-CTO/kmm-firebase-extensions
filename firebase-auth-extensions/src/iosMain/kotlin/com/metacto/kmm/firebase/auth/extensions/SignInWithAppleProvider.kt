@@ -6,6 +6,7 @@ import com.metacto.kmm.auth.common.AuthenticationMetadata
 import com.metacto.kmm.auth.common.ProfileMetadata
 import com.metacto.kmm.firebase.auth.extensions.mappers.mapError
 import kotlinx.cinterop.BetaInteropApi
+import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
 import platform.AuthenticationServices.*
 import platform.Foundation.NSError
@@ -22,7 +23,7 @@ class SignInWithAppleProvider(
 ) : NSObject(),
     ASAuthorizationControllerDelegateProtocol,
     ASAuthorizationControllerPresentationContextProvidingProtocol {
-    private var continuation: kotlin.coroutines.Continuation<AuthenticationMetadata>? = null
+    private var continuation: CancellableContinuation<AuthenticationMetadata>? = null
 
     suspend fun start(): AuthenticationMetadata {
         return suspendCancellableCoroutine { continuation ->
@@ -56,15 +57,15 @@ class SignInWithAppleProvider(
         )
 
         idToken?.let {
-            continuation?.resume(AuthenticationMetadata(it, profile))
-        } ?: continuation?.resumeWithException("idToken cannot be null".mapError(-1))
+            continuation?.resumeIfActive(AuthenticationMetadata(it, profile))
+        } ?: continuation?.exceptionIfActive("idToken cannot be null".mapError(-1))
     }
 
     override fun authorizationController(
         controller: ASAuthorizationController,
         didCompleteWithError: NSError
     ) {
-        continuation?.resumeWithException(
+        continuation?.exceptionIfActive(
             didCompleteWithError.localizedDescription.mapError(didCompleteWithError.code.toInt())
         )
     }
