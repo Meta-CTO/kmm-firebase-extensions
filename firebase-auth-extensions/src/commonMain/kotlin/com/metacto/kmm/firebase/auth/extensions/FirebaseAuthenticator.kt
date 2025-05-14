@@ -49,8 +49,10 @@ class FirebaseAuthenticator(
     }
 
     @Throws(Throwable::class)
-    override suspend fun authenticateWithApple(): AuthenticationMetadata? {
-        return  authClient.signInWithApple()
+    override suspend fun authenticateWithApple(authOptions: AuthOptions): AuthenticationMetadata? {
+        authClient.setAuthOptions(authOptions)
+        authClient.init()
+        return authClient.signInWithApple()
     }
 
     @Throws(Throwable::class)

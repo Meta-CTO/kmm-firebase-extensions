@@ -8,7 +8,7 @@ interface Authenticator {
     suspend fun authenticateWithGoogle(authOptions: AuthOptions): AuthenticationMetadata?
 
     @Throws(Throwable::class)
-    suspend fun authenticateWithApple(): AuthenticationMetadata?
+    suspend fun authenticateWithApple(authOptions: AuthOptions): AuthenticationMetadata?
 
     @Throws(Throwable::class)
     suspend fun sendEmailLink(email: String)

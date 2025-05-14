@@ -68,9 +68,13 @@ actual class AuthClient : AuthProvider {
                 if (nsError != null) {
                     cont.exceptionIfActive(Throwable(nsError.localizedDescription))
                 } else {
-                    data?.user()?.getIDTokenForcingRefresh(true) { token, nsError ->
-                        if (nsError != null) {
-                            cont.exceptionIfActive(Throwable(nsError.localizedDescription))
+                    if (data?.user() == null) {
+                        cont.exceptionIfActive(Throwable("User cannot be null"))
+                        return@signInWithCredential
+                    }
+                    data.user().getIDTokenForcingRefresh(true) { token, newError ->
+                        if (newError != null) {
+                            cont.exceptionIfActive(Throwable(newError.localizedDescription))
                         } else if (token != null) {
                             cont.resumeIfActive(
                                 AuthenticationMetadata(
