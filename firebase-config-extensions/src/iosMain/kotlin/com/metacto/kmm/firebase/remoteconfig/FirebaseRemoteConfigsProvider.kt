@@ -143,8 +143,16 @@ actual class FirebaseRemoteConfigsProvider actual constructor(
     }
 
     actual override fun getBoolean(key: String): Boolean? {
+        return getBooleanValue(key, false)
+    }
+
+    private fun getBooleanValue(key: String, isForceGet: Boolean): Boolean {
         val value = firebaseConfigs.getBoolForKey(key)
-        return if (value == RemoteConfigConstants.DEF_BOOL_VALUE) null else value
+        return if (value == RemoteConfigConstants.DEF_BOOL_VALUE && isForceGet) {
+            false
+        } else {
+            value
+        }
     }
 
     @Throws(Throwable::class)
@@ -154,7 +162,7 @@ actual class FirebaseRemoteConfigsProvider actual constructor(
             fetchConfigsFromRemote()
         }
 
-        return getBoolean(key)
+        return getBooleanValue(key, true)
     }
 
     actual override fun getDouble(key: String): Double? {

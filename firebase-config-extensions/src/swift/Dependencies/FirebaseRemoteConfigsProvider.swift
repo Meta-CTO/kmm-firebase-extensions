@@ -95,7 +95,7 @@ private extension RemoteConfigValue {
         }
 
         // Try to return numeric if applicable
-        if let number = numberValue as? NSNumber {
+        if let number = lower as? NSNumber {
             return number
         }
 
