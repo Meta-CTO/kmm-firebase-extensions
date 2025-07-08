@@ -2,6 +2,9 @@ package com.metacto.kmm.firebase.auth.extensions
 
 import com.google.firebase.Firebase
 import com.google.firebase.FirebaseException
+import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthUserCollisionException
+import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.auth.PhoneAuthCredential
 import com.google.firebase.auth.PhoneAuthOptions
 import com.google.firebase.auth.PhoneAuthProvider
@@ -24,6 +27,94 @@ actual suspend fun FirebaseAuthenticator.getIdToken(forceRefresh: Boolean): Stri
         }?.addOnFailureListener { error ->
             cont.exceptionIfActive(error)
         }
+    }
+}
+
+@Throws(Throwable::class)
+actual suspend fun FirebaseAuthenticator.signInWithEmailAndPassword(
+    email: String,
+    password: String
+): String {
+    return suspendCancellableCoroutine { cont ->
+        Firebase.auth.signInWithEmailAndPassword(email, password)
+            .addOnSuccessListener { result ->
+                Firebase.auth.currentUser?.getIdToken(true)?.addOnSuccessListener {
+                    val token = it.token
+                    if (token != null) {
+                        cont.resumeIfActive(token)
+                    } else {
+                        cont.exceptionIfActive(Throwable("Token cannot be null"))
+                    }
+                }?.addOnFailureListener { error ->
+                    cont.exceptionIfActive(error)
+                }
+            }
+            .addOnFailureListener { exception ->
+                cont.exceptionIfActive(exception)
+            }
+    }
+}
+
+@Throws(Throwable::class)
+actual suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(
+    email: String,
+    password: String
+): String {
+    return suspendCancellableCoroutine { cont ->
+        Firebase.auth.createUserWithEmailAndPassword(email, password)
+            .addOnSuccessListener { result ->
+                result.user?.sendEmailVerification()
+
+                Firebase.auth.currentUser?.getIdToken(true)?.addOnSuccessListener {
+                    val token = it.token
+                    if (token != null) {
+                        cont.resumeIfActive(token)
+                    } else {
+                        cont.exceptionIfActive(Throwable("Token cannot be null"))
+                    }
+                }?.addOnFailureListener { error ->
+                    cont.exceptionIfActive(error)
+                }
+            }
+            .addOnFailureListener { exception ->
+                when (exception) {
+                    is FirebaseAuthUserCollisionException -> {
+                        cont.exceptionIfActive(EmailAlreadyExistsThrowable())
+                    }
+
+                    is FirebaseAuthWeakPasswordException -> {
+                        cont.exceptionIfActive(
+                            WeakPasswordThrowable(
+                                exception.reason ?: "Password is too weak"
+                            )
+                        )
+                    }
+
+                    is FirebaseAuthInvalidCredentialsException -> {
+                        cont.exceptionIfActive(InvalidEmailThrowable())
+                    }
+
+                    else -> {
+                        cont.exceptionIfActive(exception)
+                    }
+                }
+            }
+    }
+}
+
+@Throws(Throwable::class)
+actual suspend fun FirebaseAuthenticator.isCurrentUserEmailVerified(): Boolean {
+    val user = Firebase.auth.currentUser ?: return false
+
+    return suspendCancellableCoroutine { continuation ->
+        user.reload()
+            .addOnSuccessListener {
+                val isVerified = Firebase.auth.currentUser?.isEmailVerified ?: false
+                continuation.resumeIfActive(isVerified)
+            }
+            .addOnFailureListener { exception ->
+                continuation.exceptionIfActive(exception)
+            }
     }
 }
 

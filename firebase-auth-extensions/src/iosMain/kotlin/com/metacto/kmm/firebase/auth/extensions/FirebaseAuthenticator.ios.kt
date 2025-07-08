@@ -44,6 +44,88 @@ actual suspend fun FirebaseAuthenticator.sendSignInLinkToEmail(
         }
     }
 }
+@Throws(Throwable::class)
+actual suspend fun FirebaseAuthenticator.signInWithEmailAndPassword(
+    email: String,
+    password: String
+): String {
+    return suspendCancellableCoroutine { continuation ->
+        FIRAuth.auth().signInWithEmail(email = email, password = password) { result, error ->
+            if (error != null) {
+                continuation.exceptionIfActive(Throwable(error.localizedDescription))
+            } else {
+                // Get ID token
+                result?.user()?.getIDTokenForcingRefresh(true) { token, tokenError ->
+                    if (tokenError != null) {
+                        continuation.exceptionIfActive(Throwable(tokenError.localizedDescription))
+                    } else if (token != null) {
+                        continuation.resumeIfActive(token)
+                    } else {
+                        continuation.exceptionIfActive(Throwable("Token cannot be null"))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Throws(Throwable::class)
+actual suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(
+    email: String,
+    password: String
+): String {
+    return suspendCancellableCoroutine { continuation ->
+        FIRAuth.auth().createUserWithEmail(email = email, password = password) { result, error ->
+            if (error != null) {
+                // Check error by error code number or description
+                val errorDescription = error.localizedDescription
+                when {
+                    error.code == 17007L || errorDescription.contains("email address is already in use", ignoreCase = true) -> {
+                        continuation.exceptionIfActive(EmailAlreadyExistsThrowable())
+                    }
+                    error.code == 17026L || errorDescription.contains("weak password", ignoreCase = true) || errorDescription.contains("password should be at least", ignoreCase = true) -> {
+                        continuation.exceptionIfActive(WeakPasswordThrowable(errorDescription))
+                    }
+                    error.code == 17008L || errorDescription.contains("badly formatted", ignoreCase = true) || errorDescription.contains("invalid email", ignoreCase = true) -> {
+                        continuation.exceptionIfActive(InvalidEmailThrowable())
+                    }
+                    else -> {
+                        continuation.exceptionIfActive(Throwable(errorDescription))
+                    }
+                }
+            } else {
+                result?.user()?.sendEmailVerificationWithCompletion { emailError ->
+                    // Get ID token after sending verification email
+                    result?.user()?.getIDTokenForcingRefresh(true) { token, tokenError ->
+                        if (tokenError != null) {
+                            continuation.exceptionIfActive(Throwable(tokenError.localizedDescription))
+                        } else if (token != null) {
+                            continuation.resumeIfActive(token)
+                        } else {
+                            continuation.exceptionIfActive(Throwable("Token cannot be null"))
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Throws(Throwable::class)
+actual suspend fun FirebaseAuthenticator.isCurrentUserEmailVerified(): Boolean {
+    val user = FIRAuth.auth().currentUser() ?: return false
+
+    return suspendCancellableCoroutine { continuation ->
+        user.reloadWithCompletion { error ->
+            if (error != null) {
+                continuation.exceptionIfActive(Throwable(error.localizedDescription))
+            } else {
+                val isVerified = FIRAuth.auth().currentUser()?.emailVerified() ?: false
+                continuation.resumeIfActive(isVerified)
+            }
+        }
+    }
+}
 
 @Throws(Throwable::class)
 actual suspend fun FirebaseAuthenticator.signInWithEmailLink(email: String, link: String): String {

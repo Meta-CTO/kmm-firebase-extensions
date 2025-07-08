@@ -9,6 +9,12 @@ import com.metacto.kmm.firebase.auth.ActionCodeSettings
 import com.metacto.kmm.firebase.auth.extensions.constants.Constants
 import com.metacto.kmm.sharedpreferences.KmmPreference
 
+class EmailAlreadyExistsThrowable(message: String = "User with this email already exists") : Throwable(message)
+
+class WeakPasswordThrowable(message: String) : Throwable("Password is too weak: $message")
+
+class InvalidEmailThrowable(message: String = "Invalid email format") : Throwable(message)
+
 @Throws(Throwable::class)
 expect suspend fun FirebaseAuthenticator.getIdToken(forceRefresh: Boolean): String
 
@@ -20,6 +26,15 @@ expect suspend fun FirebaseAuthenticator.sendSignInLinkToEmail(
 
 @Throws(Throwable::class)
 expect suspend fun FirebaseAuthenticator.signInWithEmailLink(email: String, link: String): String
+
+@Throws(Throwable::class)
+expect suspend fun FirebaseAuthenticator.signInWithEmailAndPassword(email: String, password: String): String
+
+@Throws(Throwable::class)
+expect suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(email: String, password: String): String
+
+@Throws(Throwable::class)
+expect suspend fun FirebaseAuthenticator.isCurrentUserEmailVerified(): Boolean
 
 @Throws(Throwable::class)
 expect suspend fun FirebaseAuthenticator.verifyPhoneNumber(otp: String, verificationId: String): String
