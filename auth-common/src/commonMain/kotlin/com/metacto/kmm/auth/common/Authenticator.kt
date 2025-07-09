@@ -29,5 +29,20 @@ interface Authenticator {
     suspend fun verifyPhoneOTP(code: String): String
 
     @Throws(Throwable::class)
+    suspend fun signInWithEmailPassword(email: String, password: String): String
+
+    @Throws(Throwable::class)
+    suspend fun signUpWithEmailPassword(email: String, password: String): String
+
+    @Throws(Throwable::class)
+    suspend fun sendPasswordResetUsingEmail(email: String): Boolean
+
+    @Throws(Throwable::class)
+    suspend fun sendUserEmailVerification(): Boolean
+
+    @Throws(Throwable::class)
+    suspend fun isCurrentEmailVerified(): Boolean
+
+    @Throws(Throwable::class)
     suspend fun signOut()
 }

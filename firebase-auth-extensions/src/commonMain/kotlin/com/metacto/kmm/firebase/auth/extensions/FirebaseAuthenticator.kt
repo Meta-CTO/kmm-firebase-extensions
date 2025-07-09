@@ -34,6 +34,9 @@ expect suspend fun FirebaseAuthenticator.signInWithEmailAndPassword(email: Strin
 expect suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(email: String, password: String): String
 
 @Throws(Throwable::class)
+expect suspend fun FirebaseAuthenticator.sendPasswordResetEmail(email: String): Boolean
+
+@Throws(Throwable::class)
 expect suspend fun FirebaseAuthenticator.sendEmailVerification(): Boolean
 
 @Throws(Throwable::class)
@@ -130,6 +133,40 @@ class FirebaseAuthenticator(
             kmmPreference.getSecureString(Constants.VERIFICATION_PHONE_NUMBER_VERIFICATION_ID)
         if (verificationId.isNullOrEmpty()) throw Throwable("Unable to verify phone number")
         return verifyPhoneNumber(code, verificationId)
+    }
+
+    @Throws(Throwable::class)
+    override suspend fun signInWithEmailPassword(email: String, password: String): String {
+        if (email.isEmpty() || password.isEmpty()) {
+            throw InvalidEmailThrowable("Email or password cannot be empty")
+        }
+        return signInWithEmailAndPassword(email, password)
+    }
+
+    @Throws(Throwable::class)
+    override suspend fun signUpWithEmailPassword(email: String, password: String): String {
+        if (email.isEmpty() || password.isEmpty()) {
+            throw InvalidEmailThrowable("Email or password cannot be empty")
+        }
+        return signUpWithEmailAndPassword(email, password)
+    }
+
+    @Throws(Throwable::class)
+    override suspend fun sendPasswordResetUsingEmail(email: String): Boolean {
+        if (email.isEmpty()) {
+            throw InvalidEmailThrowable("Email cannot be empty")
+        }
+        return sendPasswordResetEmail(email)
+    }
+
+    @Throws(Throwable::class)
+    override suspend fun sendUserEmailVerification(): Boolean {
+        return sendEmailVerification()
+    }
+
+    @Throws(Throwable::class)
+    override suspend fun isCurrentEmailVerified(): Boolean {
+        return isCurrentUserEmailVerified()
     }
 
     @Throws(Throwable::class)
