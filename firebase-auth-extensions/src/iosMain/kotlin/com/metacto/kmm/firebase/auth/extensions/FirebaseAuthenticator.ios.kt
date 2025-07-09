@@ -70,6 +70,21 @@ actual suspend fun FirebaseAuthenticator.signInWithEmailAndPassword(
 }
 
 @Throws(Throwable::class)
+actual suspend fun FirebaseAuthenticator.sendEmailVerification(): Boolean {
+    return suspendCancellableCoroutine { continuation ->
+        FIRAuth.auth().currentUser()?.sendEmailVerificationWithCompletion { emailError ->
+            if (emailError != null) {
+                // Email verification not sent successfully
+                continuation.resumeIfActive(false)
+            } else {
+                // Email verification sent successfully
+                continuation.resumeIfActive(true)
+            }
+        }
+    }
+}
+
+@Throws(Throwable::class)
 actual suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(
     email: String,
     password: String

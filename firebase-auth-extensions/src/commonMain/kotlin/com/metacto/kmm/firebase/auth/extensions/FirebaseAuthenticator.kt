@@ -34,6 +34,9 @@ expect suspend fun FirebaseAuthenticator.signInWithEmailAndPassword(email: Strin
 expect suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(email: String, password: String): String
 
 @Throws(Throwable::class)
+expect suspend fun FirebaseAuthenticator.sendEmailVerification(): Boolean
+
+@Throws(Throwable::class)
 expect suspend fun FirebaseAuthenticator.isCurrentUserEmailVerified(): Boolean
 
 @Throws(Throwable::class)

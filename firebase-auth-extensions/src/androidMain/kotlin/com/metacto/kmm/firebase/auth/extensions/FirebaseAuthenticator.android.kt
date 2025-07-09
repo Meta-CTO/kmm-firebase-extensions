@@ -56,6 +56,21 @@ actual suspend fun FirebaseAuthenticator.signInWithEmailAndPassword(
 }
 
 @Throws(Throwable::class)
+actual suspend fun FirebaseAuthenticator.sendEmailVerification(): Boolean {
+    val user = Firebase.auth.currentUser ?: throw Throwable("No current user found")
+    return suspendCancellableCoroutine { continuation ->
+        user.sendEmailVerification()
+            .addOnSuccessListener {
+                continuation.resumeIfActive(true)
+            }
+            .addOnFailureListener { error ->
+                continuation.exceptionIfActive(error)
+            }
+    }
+}
+
+
+@Throws(Throwable::class)
 actual suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(
     email: String,
     password: String
