@@ -38,9 +38,13 @@ actual suspend fun FirebaseAuthenticator.signInWithEmailAndPassword(
 }
 
 @Throws(Throwable::class)
-actual suspend fun FirebaseAuthenticator.sendPasswordResetEmail(email: String): Boolean {
+actual suspend fun FirebaseAuthenticator.sendPasswordResetEmail(
+    email: String,
+    actionCodeSettings: ActionCodeSettings?
+): Boolean {
+    val authActionCodeSettings = actionCodeSettings?.toAndroid()
     return suspendCancellableCoroutine { continuation ->
-        Firebase.auth.sendPasswordResetEmail(email)
+        Firebase.auth.sendPasswordResetEmail(email, authActionCodeSettings)
             .addOnSuccessListener {
                 continuation.resumeIfActive(true)
             }
@@ -67,12 +71,21 @@ actual suspend fun FirebaseAuthenticator.sendEmailVerification(): Boolean {
 @Throws(Throwable::class)
 actual suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(
     email: String,
-    password: String
+    password: String,
+    actionCodeSettings: ActionCodeSettings?
 ): String {
-    return suspendCancellableCoroutine { cont ->
+        val authActionCodeSettings = actionCodeSettings?.toAndroid()
+
+        return suspendCancellableCoroutine { cont ->
         Firebase.auth.createUserWithEmailAndPassword(email, password)
             .addOnSuccessListener { result ->
-                result.user?.sendEmailVerification()?.addOnSuccessListener {
+                val request = if(authActionCodeSettings != null) {
+                    Firebase.auth.currentUser?.sendEmailVerification(authActionCodeSettings)
+                } else {
+                    Firebase.auth.currentUser?.sendEmailVerification()
+                }
+
+                request?.addOnSuccessListener {
                     getIdTokenFromUser(Firebase.auth.currentUser, cont)
                 }?.addOnFailureListener {
                     cont.exceptionIfActive(Throwable("Failed to send verification email"))

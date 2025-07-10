@@ -54,9 +54,13 @@ actual suspend fun FirebaseAuthenticator.signInWithEmailAndPassword(
 }
 
 @Throws(Throwable::class)
-actual suspend fun FirebaseAuthenticator.sendPasswordResetEmail(email: String): Boolean {
+actual suspend fun FirebaseAuthenticator.sendPasswordResetEmail(
+    email: String,
+    actionCodeSettings: ActionCodeSettings?
+): Boolean {
     return suspendCancellableCoroutine { continuation ->
-        FIRAuth.auth().sendPasswordResetWithEmail(email = email) { error ->
+        val settings = actionCodeSettings?.toIOS()
+        FIRAuth.auth().sendPasswordResetWithEmail(email = email, actionCodeSettings = settings) { error ->
             if (error != null) {
                 // Password reset email not sent successfully
                 continuation.resumeIfActive(false)
@@ -86,7 +90,8 @@ actual suspend fun FirebaseAuthenticator.sendEmailVerification(): Boolean {
 @Throws(Throwable::class)
 actual suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(
     email: String,
-    password: String
+    password: String,
+    actionCodeSettings: ActionCodeSettings?
 ): String {
     return suspendCancellableCoroutine { continuation ->
         FIRAuth.auth().createUserWithEmail(email = email, password = password) { result, error ->
@@ -123,10 +128,23 @@ actual suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(
                     }
                 }
             } else {
-                result?.user()?.sendEmailVerificationWithCompletion { emailError ->
-                    handleError(emailError, continuation) {
-                        // Get ID token after sending verification email
-                        getIDTokenFromUser(result.user(), continuation)
+                val settings = actionCodeSettings?.toIOS()
+                if (settings != null) {
+                    // Send verification email with action code settings
+                    result?.user()
+                        ?.sendEmailVerificationWithActionCodeSettings(settings) { emailError ->
+                            handleError(emailError, continuation) {
+                                // Get ID token after sending verification email
+                                getIDTokenFromUser(result.user(), continuation)
+                            }
+                        }
+                } else {
+                    // Send verification email without action code settings
+                    result?.user()?.sendEmailVerificationWithCompletion() { emailError ->
+                        handleError(emailError, continuation) {
+                            // Get ID token after sending verification email
+                            getIDTokenFromUser(result.user(), continuation)
+                        }
                     }
                 }
             }

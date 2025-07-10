@@ -31,10 +31,10 @@ expect suspend fun FirebaseAuthenticator.signInWithEmailLink(email: String, link
 expect suspend fun FirebaseAuthenticator.signInWithEmailAndPassword(email: String, password: String): String
 
 @Throws(Throwable::class)
-expect suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(email: String, password: String): String
+expect suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(email: String, password: String, actionCodeSettings: ActionCodeSettings? = null): String
 
 @Throws(Throwable::class)
-expect suspend fun FirebaseAuthenticator.sendPasswordResetEmail(email: String): Boolean
+expect suspend fun FirebaseAuthenticator.sendPasswordResetEmail(email: String, actionCodeSettings: ActionCodeSettings? = null): Boolean
 
 @Throws(Throwable::class)
 expect suspend fun FirebaseAuthenticator.sendEmailVerification(): Boolean
