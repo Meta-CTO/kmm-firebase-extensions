@@ -28,22 +28,16 @@ actual suspend fun FirebaseAuthenticator.sendSignInLinkToEmail(
     actionCodeSettings: ActionCodeSettings
 ) {
     return suspendCancellableCoroutine { continuation ->
-        val actionCodeSettingsIOS = FIRActionCodeSettings()
-        actionCodeSettingsIOS.setURL(NSURL(string = actionCodeSettings.url))
-        actionCodeSettingsIOS.setHandleCodeInApp(actionCodeSettings.canHandleCodeInApp)
-        actionCodeSettingsIOS.setIOSBundleID(actionCodeSettings.iOSBundleId)
-        actionCodeSettingsIOS.setAndroidPackageName(actionCodeSettings.androidPackageName)
-        actionCodeSettingsIOS.setAndroidInstallIfNotAvailable(actionCodeSettings.installIfNotAvailable)
+        val actionCodeSettingsIOS = actionCodeSettings.toIOS()
 
         FIRAuth.auth().sendSignInLinkToEmail(email, actionCodeSettingsIOS) { error ->
-            if (error != null) {
-                continuation.exceptionIfActive(Throwable(error.localizedDescription))
-            } else {
+            handleError(error, continuation) {
                 continuation.resumeIfActive(Unit)
             }
         }
     }
 }
+
 @Throws(Throwable::class)
 actual suspend fun FirebaseAuthenticator.signInWithEmailAndPassword(
     email: String,
@@ -51,19 +45,9 @@ actual suspend fun FirebaseAuthenticator.signInWithEmailAndPassword(
 ): String {
     return suspendCancellableCoroutine { continuation ->
         FIRAuth.auth().signInWithEmail(email = email, password = password) { result, error ->
-            if (error != null) {
-                continuation.exceptionIfActive(Throwable(error.localizedDescription))
-            } else {
+            handleError(error, continuation) {
                 // Get ID token
-                result?.user()?.getIDTokenForcingRefresh(true) { token, tokenError ->
-                    if (tokenError != null) {
-                        continuation.exceptionIfActive(Throwable(tokenError.localizedDescription))
-                    } else if (token != null) {
-                        continuation.resumeIfActive(token)
-                    } else {
-                        continuation.exceptionIfActive(Throwable("Token cannot be null"))
-                    }
-                }
+                getIDTokenFromUser(result?.user(), continuation)
             }
         }
     }
@@ -110,30 +94,39 @@ actual suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(
                 // Check error by error code number or description
                 val errorDescription = error.localizedDescription
                 when {
-                    error.code == 17007L || errorDescription.contains("email address is already in use", ignoreCase = true) -> {
+                    error.code == 17007L || errorDescription.contains(
+                        "email address is already in use",
+                        ignoreCase = true
+                    ) -> {
                         continuation.exceptionIfActive(EmailAlreadyExistsThrowable())
                     }
-                    error.code == 17026L || errorDescription.contains("weak password", ignoreCase = true) || errorDescription.contains("password should be at least", ignoreCase = true) -> {
+
+                    error.code == 17026L || errorDescription.contains(
+                        "weak password",
+                        ignoreCase = true
+                    ) || errorDescription.contains(
+                        "password should be at least",
+                        ignoreCase = true
+                    ) -> {
                         continuation.exceptionIfActive(WeakPasswordThrowable(errorDescription))
                     }
-                    error.code == 17008L || errorDescription.contains("badly formatted", ignoreCase = true) || errorDescription.contains("invalid email", ignoreCase = true) -> {
+
+                    error.code == 17008L || errorDescription.contains(
+                        "badly formatted",
+                        ignoreCase = true
+                    ) || errorDescription.contains("invalid email", ignoreCase = true) -> {
                         continuation.exceptionIfActive(InvalidEmailThrowable())
                     }
+
                     else -> {
                         continuation.exceptionIfActive(Throwable(errorDescription))
                     }
                 }
             } else {
                 result?.user()?.sendEmailVerificationWithCompletion { emailError ->
-                    // Get ID token after sending verification email
-                    result?.user()?.getIDTokenForcingRefresh(true) { token, tokenError ->
-                        if (tokenError != null) {
-                            continuation.exceptionIfActive(Throwable(tokenError.localizedDescription))
-                        } else if (token != null) {
-                            continuation.resumeIfActive(token)
-                        } else {
-                            continuation.exceptionIfActive(Throwable("Token cannot be null"))
-                        }
+                    handleError(emailError, continuation) {
+                        // Get ID token after sending verification email
+                        getIDTokenFromUser(result.user(), continuation)
                     }
                 }
             }
@@ -147,9 +140,7 @@ actual suspend fun FirebaseAuthenticator.isCurrentUserEmailVerified(): Boolean {
 
     return suspendCancellableCoroutine { continuation ->
         user.reloadWithCompletion { error ->
-            if (error != null) {
-                continuation.exceptionIfActive(Throwable(error.localizedDescription))
-            } else {
+            handleError(error, continuation) {
                 val isVerified = FIRAuth.auth().currentUser()?.emailVerified() ?: false
                 continuation.resumeIfActive(isVerified)
             }
@@ -160,10 +151,11 @@ actual suspend fun FirebaseAuthenticator.isCurrentUserEmailVerified(): Boolean {
 @Throws(Throwable::class)
 actual suspend fun FirebaseAuthenticator.signInWithEmailLink(email: String, link: String): String {
     return suspendCancellableCoroutine { continuation ->
-        FIRAuth.auth().signInWithEmail(email = email, link = link) { result: FIRAuthDataResult?, error: NSError? ->
-            if (error != null) {
-                continuation.exceptionIfActive(Throwable(error.localizedDescription))
-            } else {
+        FIRAuth.auth().signInWithEmail(
+            email = email,
+            link = link
+        ) { result: FIRAuthDataResult?, error: NSError? ->
+            handleError(error, continuation) {
                 getIDTokenFromUser(result?.user(), continuation)
             }
         }
@@ -171,16 +163,19 @@ actual suspend fun FirebaseAuthenticator.signInWithEmailLink(email: String, link
 }
 
 @Throws(Throwable::class)
-actual suspend fun FirebaseAuthenticator.verifyPhoneNumber(otp: String, verificationId: String): String {
+actual suspend fun FirebaseAuthenticator.verifyPhoneNumber(
+    otp: String,
+    verificationId: String
+): String {
     return suspendCancellableCoroutine { continuation ->
-        val credential = FirebaseAuth.FIRPhoneAuthProvider.provider().credentialWithVerificationID(verificationId, otp)
-        FIRAuth.auth().signInWithCredential(credential) { result: FIRAuthDataResult?, error: NSError? ->
-            if (error != null) {
-                continuation.exceptionIfActive(Throwable(error.localizedDescription))
-            } else {
-                getIDTokenFromUser(result?.user(), continuation)
+        val credential = FirebaseAuth.FIRPhoneAuthProvider.provider()
+            .credentialWithVerificationID(verificationId, otp)
+        FIRAuth.auth()
+            .signInWithCredential(credential) { result: FIRAuthDataResult?, error: NSError? ->
+                handleError(error, continuation) {
+                    getIDTokenFromUser(result?.user(), continuation)
+                }
             }
-        }
     }
 }
 
@@ -190,15 +185,16 @@ actual suspend fun FirebaseAuthenticator.sendSignInOTPToPhone(
     phoneVerifierProvider: PhoneVerifierProvider?
 ): PhoneVerifierMetadata {
     return suspendCancellableCoroutine { continuation ->
-        FirebaseAuth.FIRPhoneAuthProvider.provider().verifyPhoneNumber(phoneNumber, null) { verificationID, error ->
-            if (error != null) {
-                continuation.exceptionIfActive(Throwable(error.localizedDescription))
-            } else if (verificationID != null) {
-                continuation.resumeIfActive(PhoneVerifierMetadata(verificationID, phoneNumber))
-            } else {
-                continuation.exceptionIfActive(Throwable("Unable to send sign in OTP due to unknown error"))
+        FirebaseAuth.FIRPhoneAuthProvider.provider()
+            .verifyPhoneNumber(phoneNumber, null) { verificationID, error ->
+                if (error != null) {
+                    continuation.exceptionIfActive(Throwable(error.localizedDescription))
+                } else if (verificationID != null) {
+                    continuation.resumeIfActive(PhoneVerifierMetadata(verificationID, phoneNumber))
+                } else {
+                    continuation.exceptionIfActive(Throwable("Unable to send sign in OTP due to unknown error"))
+                }
             }
-        }
     }
 }
 
@@ -217,12 +213,40 @@ private fun getIDTokenFromUser(
     }
 
     user.getIDTokenForcingRefresh(true) { token, error ->
-        if (error != null) {
-            continuation.exceptionIfActive(Throwable(error.localizedDescription))
-        } else if (token != null) {
-            continuation.resumeIfActive(token)
-        } else {
-            continuation.exceptionIfActive(Throwable("Unable to get id token due to unknown error"))
-        }
+        handleTokenResult(token, error, continuation)
+    }
+}
+
+private fun handleTokenResult(
+    token: String?,
+    error: NSError?,
+    continuation: CancellableContinuation<String>
+) {
+    when {
+        error != null -> continuation.exceptionIfActive(Throwable(error.localizedDescription))
+        token != null -> continuation.resumeIfActive(token)
+        else -> continuation.exceptionIfActive(Throwable("Unable to get id token due to unknown error"))
+    }
+}
+
+private fun handleError(
+    error: NSError?,
+    continuation: CancellableContinuation<*>,
+    onSuccess: () -> Unit
+) {
+    if (error != null) {
+        continuation.exceptionIfActive(Throwable(error.localizedDescription))
+    } else {
+        onSuccess()
+    }
+}
+
+private fun ActionCodeSettings.toIOS(): FIRActionCodeSettings {
+    return FIRActionCodeSettings().apply {
+        setURL(NSURL(string = url))
+        setHandleCodeInApp(canHandleCodeInApp)
+        setIOSBundleID(iOSBundleId)
+        setAndroidPackageName(androidPackageName)
+        setAndroidInstallIfNotAvailable(installIfNotAvailable)
     }
 }

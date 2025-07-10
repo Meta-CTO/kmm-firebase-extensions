@@ -17,16 +17,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 @Throws(Throwable::class)
 actual suspend fun FirebaseAuthenticator.getIdToken(forceRefresh: Boolean): String {
     return suspendCancellableCoroutine { cont ->
-        Firebase.auth.currentUser?.getIdToken(true)?.addOnSuccessListener {
-            val token = it.token
-            if (token != null) {
-                cont.resumeIfActive(token)
-            } else {
-                cont.exceptionIfActive(Throwable("Token cannot be null"))
-            }
-        }?.addOnFailureListener { error ->
-            cont.exceptionIfActive(error)
-        }
+        getIdTokenFromUser(Firebase.auth.currentUser, cont)
     }
 }
 
@@ -38,16 +29,7 @@ actual suspend fun FirebaseAuthenticator.signInWithEmailAndPassword(
     return suspendCancellableCoroutine { cont ->
         Firebase.auth.signInWithEmailAndPassword(email, password)
             .addOnSuccessListener { result ->
-                Firebase.auth.currentUser?.getIdToken(true)?.addOnSuccessListener {
-                    val token = it.token
-                    if (token != null) {
-                        cont.resumeIfActive(token)
-                    } else {
-                        cont.exceptionIfActive(Throwable("Token cannot be null"))
-                    }
-                }?.addOnFailureListener { error ->
-                    cont.exceptionIfActive(error)
-                }
+                getIdTokenFromUser(Firebase.auth.currentUser, cont)
             }
             .addOnFailureListener { exception ->
                 cont.exceptionIfActive(exception)
@@ -90,17 +72,10 @@ actual suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(
     return suspendCancellableCoroutine { cont ->
         Firebase.auth.createUserWithEmailAndPassword(email, password)
             .addOnSuccessListener { result ->
-                result.user?.sendEmailVerification()
-
-                Firebase.auth.currentUser?.getIdToken(true)?.addOnSuccessListener {
-                    val token = it.token
-                    if (token != null) {
-                        cont.resumeIfActive(token)
-                    } else {
-                        cont.exceptionIfActive(Throwable("Token cannot be null"))
-                    }
-                }?.addOnFailureListener { error ->
-                    cont.exceptionIfActive(error)
+                result.user?.sendEmailVerification()?.addOnSuccessListener {
+                    getIdTokenFromUser(Firebase.auth.currentUser, cont)
+                }?.addOnFailureListener {
+                    cont.exceptionIfActive(Throwable("Failed to send verification email"))
                 }
             }
             .addOnFailureListener { exception ->
@@ -150,16 +125,7 @@ actual suspend fun FirebaseAuthenticator.sendSignInLinkToEmail(
     email: String,
     actionCodeSettings: ActionCodeSettings
 ) {
-    val authActionCodeSettings = com.google.firebase.auth.ActionCodeSettings.newBuilder()
-        .setUrl(actionCodeSettings.url)
-        .setHandleCodeInApp(actionCodeSettings.canHandleCodeInApp)
-        .setIOSBundleId(actionCodeSettings.iOSBundleId)
-        .setAndroidPackageName(
-            actionCodeSettings.androidPackageName,
-            actionCodeSettings.installIfNotAvailable,
-            null
-        )
-        .build()
+    val authActionCodeSettings = actionCodeSettings.toAndroid()
     Firebase.auth.sendSignInLinkToEmail(email, authActionCodeSettings).result
 }
 
@@ -173,17 +139,7 @@ actual suspend fun FirebaseAuthenticator.signInWithEmailLink(
             email,
             link
         ).addOnSuccessListener {
-            val user = it.user
-            if (user != null) {
-                user.getIdToken(true).addOnSuccessListener { tokenResult ->
-                    val idToken = tokenResult.token.orEmpty()
-                    cont.resumeIfActive(idToken)
-                }.addOnFailureListener { error ->
-                    cont.exceptionIfActive(error)
-                }
-            } else {
-                cont.exceptionIfActive(Throwable("User cannot be null"))
-            }
+            getIdTokenFromUser(it.user, cont)
         }.addOnFailureListener { error ->
             cont.exceptionIfActive(error)
         }
@@ -198,17 +154,7 @@ actual suspend fun FirebaseAuthenticator.verifyPhoneNumber(
     return suspendCancellableCoroutine { cont ->
         val credential = PhoneAuthProvider.getCredential(verificationId, otp)
         Firebase.auth.signInWithCredential(credential).addOnSuccessListener { result ->
-            val user = result.user
-            if (user != null) {
-                user.getIdToken(true).addOnSuccessListener { tokenResult ->
-                    val idToken = tokenResult.token.orEmpty()
-                    cont.resumeIfActive(idToken)
-                }.addOnFailureListener { error ->
-                    cont.exceptionIfActive(error)
-                }
-            } else {
-                cont.exceptionIfActive(Throwable("User cannot be null"))
-            }
+            getIdTokenFromUser(result.user, cont)
         }.addOnFailureListener { error ->
             cont.exceptionIfActive(error)
 
@@ -259,5 +205,41 @@ actual suspend fun FirebaseAuthenticator.sendSignInOTPToPhone(
 @Throws(Throwable::class)
 actual suspend fun FirebaseAuthenticator.logout() {
     Firebase.auth.signOut()
+}
+
+private fun getIdTokenFromUser(
+    user: com.google.firebase.auth.FirebaseUser?,
+    continuation: kotlinx.coroutines.CancellableContinuation<String>
+) {
+    if (user == null) {
+        continuation.exceptionIfActive(Throwable("User cannot be null"))
+        return
+    }
+    
+    user.getIdToken(true)
+        .addOnSuccessListener { tokenResult ->
+            val token = tokenResult.token
+            if (token != null) {
+                continuation.resumeIfActive(token)
+            } else {
+                continuation.exceptionIfActive(Throwable("Token cannot be null"))
+            }
+        }
+        .addOnFailureListener { error ->
+            continuation.exceptionIfActive(error)
+        }
+}
+
+private fun ActionCodeSettings.toAndroid(): com.google.firebase.auth.ActionCodeSettings {
+    return com.google.firebase.auth.ActionCodeSettings.newBuilder()
+        .setUrl(url)
+        .setHandleCodeInApp(canHandleCodeInApp)
+        .setIOSBundleId(iOSBundleId)
+        .setAndroidPackageName(
+            androidPackageName,
+            installIfNotAvailable,
+            null
+        )
+        .build()
 }
 
