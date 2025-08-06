@@ -5,10 +5,10 @@ interface Authenticator {
     suspend fun authenticateCurrentUser(): String
 
     @Throws(Throwable::class)
-    suspend fun authenticateWithGoogle(authOptions: AuthOptions): AuthenticationMetadata?
+    suspend fun authenticateWithGoogle(authOptions: AuthOptions): AuthenticationMetadata
 
     @Throws(Throwable::class)
-    suspend fun authenticateWithApple(authOptions: AuthOptions): AuthenticationMetadata?
+    suspend fun authenticateWithApple(authOptions: AuthOptions): AuthenticationMetadata
 
     @Throws(Throwable::class)
     suspend fun sendEmailLink(email: String)

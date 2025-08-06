@@ -4,8 +4,8 @@ import com.metacto.kmm.auth.common.AuthenticationMetadata
 
 interface AuthProvider {
     @Throws(Throwable::class)
-    suspend fun signInWithGoogle(): AuthenticationMetadata?
+    suspend fun signInWithGoogle(): AuthenticationMetadata
 
     @Throws(Throwable::class)
-    suspend fun signInWithApple(): AuthenticationMetadata?
+    suspend fun signInWithApple(): AuthenticationMetadata
 }

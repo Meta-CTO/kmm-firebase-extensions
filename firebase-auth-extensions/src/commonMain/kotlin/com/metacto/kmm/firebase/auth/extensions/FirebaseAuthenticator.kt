@@ -63,14 +63,14 @@ class FirebaseAuthenticator(
     }
 
     @Throws(Throwable::class)
-    override suspend fun authenticateWithGoogle(authOptions: AuthOptions): AuthenticationMetadata? {
+    override suspend fun authenticateWithGoogle(authOptions: AuthOptions): AuthenticationMetadata {
         authClient.setAuthOptions(authOptions)
         authClient.init()
         return authClient.signInWithGoogle()
     }
 
     @Throws(Throwable::class)
-    override suspend fun authenticateWithApple(authOptions: AuthOptions): AuthenticationMetadata? {
+    override suspend fun authenticateWithApple(authOptions: AuthOptions): AuthenticationMetadata {
         authClient.setAuthOptions(authOptions)
         authClient.init()
         return authClient.signInWithApple()

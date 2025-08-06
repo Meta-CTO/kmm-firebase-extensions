@@ -59,7 +59,7 @@ kotlin {
                         add("FirebaseCore", exportToKotlin = false)
                         add("FirebaseRemoteConfig", exportToKotlin = false)
                     },
-                    version = "11.11.0",
+                    version = "12.1.0",
                 )
             }
         }

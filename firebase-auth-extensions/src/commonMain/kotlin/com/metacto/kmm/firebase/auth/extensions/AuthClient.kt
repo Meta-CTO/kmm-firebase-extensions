@@ -6,6 +6,6 @@ import com.metacto.kmm.auth.common.AuthenticationMetadata
 expect class AuthClient() : AuthProvider {
     fun init()
     fun setAuthOptions(options: AuthOptions)
-    override suspend fun signInWithApple(): AuthenticationMetadata?
-    override suspend fun signInWithGoogle(): AuthenticationMetadata?
+    override suspend fun signInWithApple(): AuthenticationMetadata
+    override suspend fun signInWithGoogle(): AuthenticationMetadata
 }

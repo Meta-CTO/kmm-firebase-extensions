@@ -57,14 +57,14 @@ kotlin {
                         add("FirebaseCore", exportToKotlin = true)
                         add("FirebaseAuth", exportToKotlin = true)
                     },
-                    version = "11.11.0",
+                    version = "12.1.0",
                 )
                 remotePackageVersion(
                     url = URI("https://github.com/google/GoogleSignIn-iOS.git"),
                     products = {
                         add("GoogleSignIn", exportToKotlin = true)
                     },
-                    version = "8.0.0",
+                    version = "9.0.0",
                 )
             }
         }

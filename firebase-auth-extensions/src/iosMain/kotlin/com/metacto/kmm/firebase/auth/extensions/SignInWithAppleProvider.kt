@@ -4,7 +4,8 @@ package com.metacto.kmm.firebase.auth.extensions
 
 import com.metacto.kmm.auth.common.AuthenticationMetadata
 import com.metacto.kmm.auth.common.ProfileMetadata
-import com.metacto.kmm.firebase.auth.extensions.mappers.mapError
+import com.metacto.kmm.firebase.auth.extensions.exceptions.AuthCancelledThrowable
+import com.metacto.kmm.firebase.auth.extensions.exceptions.AuthThrowable
 import kotlinx.cinterop.BetaInteropApi
 import kotlinx.coroutines.CancellableContinuation
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -58,16 +59,21 @@ class SignInWithAppleProvider(
 
         idToken?.let {
             continuation?.resumeIfActive(AuthenticationMetadata(it, profile))
-        } ?: continuation?.exceptionIfActive("idToken cannot be null".mapError(-1))
+        } ?: continuation?.exceptionIfActive(AuthThrowable("idToken cannot be null", 0))
     }
 
     override fun authorizationController(
         controller: ASAuthorizationController,
         didCompleteWithError: NSError
     ) {
-        continuation?.exceptionIfActive(
-            didCompleteWithError.localizedDescription.mapError(didCompleteWithError.code.toInt())
-        )
+        val error = when (didCompleteWithError.code.toInt()) {
+            ASAuthorizationErrorCanceled.toInt() -> AuthCancelledThrowable() // ASAuthorizationErrorCanceled
+            else -> AuthThrowable(
+                message = didCompleteWithError.localizedDescription,
+                code = didCompleteWithError.code.toInt()
+            )
+        }
+        continuation?.exceptionIfActive(error)
     }
 
     override fun presentationAnchorForAuthorizationController(controller: ASAuthorizationController): ASPresentationAnchor {

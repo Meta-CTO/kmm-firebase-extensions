@@ -2,6 +2,7 @@ package com.metacto.kmm.firebase.auth.extensions
 
 import com.metacto.kmm.auth.common.ProfileMetadata
 import com.metacto.kmm.firebase.auth.extensions.exceptions.AuthCancelledThrowable
+import com.metacto.kmm.firebase.auth.extensions.exceptions.AuthThrowable
 
 import android.app.Activity
 import androidx.activity.result.ActivityResult
@@ -21,7 +22,7 @@ import kotlin.coroutines.resumeWithException
 actual class AuthClient : AuthProvider {
     private lateinit var gClient: GoogleSignInClient
     private lateinit var options: AuthOptions
-    private var continuation: kotlin.coroutines.Continuation<AuthenticationMetadata?>? = null
+    private var continuation: kotlin.coroutines.Continuation<AuthenticationMetadata>? = null
 
     actual fun init() {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
@@ -65,7 +66,7 @@ actual class AuthClient : AuthProvider {
                                 continuation?.resumeWithException(error)
                             }
                         } else {
-                            continuation?.resume(null)
+                            continuation?.resumeWithException(AuthThrowable("User not found", 404))
                         }
                     }.addOnFailureListener { error ->
                         continuation?.resumeWithException(error)
@@ -83,11 +84,11 @@ actual class AuthClient : AuthProvider {
         }
     }
 
-    actual override suspend fun signInWithApple(): AuthenticationMetadata? {
+    actual override suspend fun signInWithApple(): AuthenticationMetadata {
         TODO("Not yet implemented")
     }
 
-    actual override suspend fun signInWithGoogle(): AuthenticationMetadata? {
+    actual override suspend fun signInWithGoogle(): AuthenticationMetadata {
         return suspendCancellableCoroutine { continuation ->
             this.continuation = continuation
             options.launcher.launch(gClient.signInIntent)
