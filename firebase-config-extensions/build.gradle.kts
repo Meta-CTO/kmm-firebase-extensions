@@ -52,6 +52,7 @@ kotlin {
 
     swiftPackageConfig {
         create(dependencies) {
+            minIos = "15.0"
             dependency {
                 remotePackageVersion(
                     url = URI("https://github.com/firebase/firebase-ios-sdk.git"),
