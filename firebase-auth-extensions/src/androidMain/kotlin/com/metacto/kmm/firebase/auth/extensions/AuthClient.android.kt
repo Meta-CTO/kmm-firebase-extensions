@@ -1,6 +1,7 @@
 package com.metacto.kmm.firebase.auth.extensions
 
 import com.metacto.kmm.auth.common.ProfileMetadata
+import com.metacto.kmm.firebase.auth.extensions.exceptions.AuthCancelledThrowable
 
 import android.app.Activity
 import androidx.activity.result.ActivityResult
@@ -32,7 +33,7 @@ actual class AuthClient : AuthProvider {
 
         options.onResult = {
             if (it.resultCode == Activity.RESULT_CANCELED) {
-                continuation?.resume(null)
+                continuation?.resumeWithException(AuthCancelledThrowable())
             } else {
                 setActivityResult(it)
             }
@@ -68,6 +69,12 @@ actual class AuthClient : AuthProvider {
                         }
                     }.addOnFailureListener { error ->
                         continuation?.resumeWithException(error)
+                    }
+                } catch (e: ApiException) {
+                    if (e.statusCode == 12501) { // Google Sign-In cancelled
+                        continuation?.resumeWithException(AuthCancelledThrowable())
+                    } else {
+                        continuation?.resumeWithException(e)
                     }
                 } catch (throwable: Throwable) {
                     continuation?.resumeWithException(throwable)
