@@ -16,3 +16,4 @@ local.properties
 iosApp/Pods
 exportedDependencies
 .kotlin
+.claude/settings.local.json
