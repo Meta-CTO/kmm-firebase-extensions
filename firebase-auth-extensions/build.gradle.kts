@@ -27,9 +27,6 @@ val dependencies = "Dependencies"
 
 kotlin {
     androidTarget {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.fromTarget(libs.versions.java.version.get()))
-        }
         publishLibraryVariants("debug", "release")
     }
 
@@ -60,7 +57,7 @@ kotlin {
                         add("FirebaseCore", exportToKotlin = true)
                         add("FirebaseAuth", exportToKotlin = true)
                     },
-                    version = "12.1.0",
+                    version = "12.4.0",
                 )
                 remotePackageVersion(
                     url = URI("https://github.com/google/GoogleSignIn-iOS.git"),
@@ -71,10 +68,6 @@ kotlin {
                 )
             }
         }
-    }
-
-    js(IR) {
-        nodejs()
     }
 
     metadata {

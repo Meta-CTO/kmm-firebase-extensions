@@ -28,10 +28,6 @@ group = "com.metacto.kmm"
 
 kotlin {
     androidTarget {
-        compilerOptions {
-            jvmTarget.set(JvmTarget.fromTarget(libs.versions.java.version.get()))
-        }
-
         publishLibraryVariants("debug", "release")
     }
 
@@ -63,7 +59,7 @@ kotlin {
                         add("FirebaseCore", exportToKotlin = false)
                         add("FirebaseRemoteConfig", exportToKotlin = false)
                     },
-                    version = "12.1.0",
+                    version = "12.4.0",
                 )
             }
         }
