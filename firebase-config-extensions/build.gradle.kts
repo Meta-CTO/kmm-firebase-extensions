@@ -73,8 +73,15 @@ kotlin {
 
     sourceSets {
         commonMain.dependencies {
+            implementation(libs.kotlinx.coroutines.core)
             implementation(libs.kotlinx.serialization.json)
+            implementation(libs.logger)
+            implementation(libs.kmm.preferences)
             implementation(project(":remote-config-common"))
+        }
+
+        androidMain.dependencies {
+            api(libs.firebase.config.ktx)
         }
     }
 }

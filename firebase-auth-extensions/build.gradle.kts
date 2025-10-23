@@ -79,11 +79,13 @@ kotlin {
     sourceSets {
         commonMain.dependencies {
             implementation(libs.kotlinx.coroutines.core)
+            implementation(libs.kmm.preferences)
             implementation(project(":auth-common"))
         }
 
         androidMain.dependencies {
             api(libs.play.services.auth)
+            api(libs.firebase.auth.ktx)
         }
     }
 }

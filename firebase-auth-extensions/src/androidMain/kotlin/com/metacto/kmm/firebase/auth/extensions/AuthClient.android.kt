@@ -16,13 +16,14 @@ import com.google.firebase.auth.auth
 import com.metacto.kmm.auth.common.AuthOptions
 import com.metacto.kmm.auth.common.AuthenticationMetadata
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.Continuation
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
 actual class AuthClient : AuthProvider {
     private lateinit var gClient: GoogleSignInClient
     private lateinit var options: AuthOptions
-    private var continuation: kotlin.coroutines.Continuation<AuthenticationMetadata>? = null
+    private var continuation: Continuation<AuthenticationMetadata>? = null
 
     actual fun init() {
         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
