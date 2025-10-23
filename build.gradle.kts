@@ -1,19 +1,6 @@
-buildscript {
-    repositories {
-        gradlePluginPortal()
-        google {
-            content {
-                includeGroupByRegex("com\\.android.*")
-                includeGroupByRegex("com\\.google.*")
-                includeGroupByRegex("androidx.*")
-            }
-        }
-        mavenCentral()
-        mavenLocal()
-        maven(url = "https://jitpack.io")
-    }
-    dependencies {
-        classpath(Build.KOTLIN_GRADLE_PLUGIN)
-        classpath(Build.BUILD_TOOLS)
-    }
+plugins {
+    alias(libs.plugins.kotlin.multiplatform) apply false
+    alias(libs.plugins.kotlin.serialization) apply false
+    alias(libs.plugins.android.library) apply false
+    alias(libs.plugins.spm4kmp) apply false
 }

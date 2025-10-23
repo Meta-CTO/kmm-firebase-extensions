@@ -9,10 +9,9 @@ import com.metacto.kmm.auth.common.ProfileMetadata
 import com.metacto.kmm.firebase.auth.extensions.exceptions.AuthCancelledThrowable
 import com.metacto.kmm.firebase.auth.extensions.exceptions.AuthThrowable
 import kotlinx.coroutines.suspendCancellableCoroutine
+import platform.UIKit.UIViewController
 import platform.darwin.dispatch_async
 import platform.darwin.dispatch_get_main_queue
-
-import platform.UIKit.UIViewController
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 

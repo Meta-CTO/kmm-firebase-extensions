@@ -4,10 +4,10 @@ package com.metacto.kmm.firebase.auth.extensions
 
 import FirebaseAuth.FIRAuth
 import FirebaseAuth.FIRGoogleAuthProvider
-import com.metacto.kmm.auth.common.AuthOptions
-import kotlinx.cinterop.ExperimentalForeignApi
 import FirebaseAuth.FIROAuthProvider
+import com.metacto.kmm.auth.common.AuthOptions
 import com.metacto.kmm.auth.common.AuthenticationMetadata
+import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.suspendCancellableCoroutine
 
 @OptIn(ExperimentalForeignApi::class)

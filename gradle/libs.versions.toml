@@ -1,0 +1,32 @@
+[versions]
+kotlin = "2.1.21"
+agp = "8.13.0"
+spm4kmp = "1.0.0"
+
+# KotlinX
+kotlinx-serialization = "1.6.3"
+kotlinx-coroutines = "1.8.1"
+
+# Android
+activity-ktx = "1.9.0"
+play-services-auth = "21.1.1"
+
+# Build Config
+android-min-sdk = "26"
+android-compile-sdk = "34"
+java-version = "17"
+
+[libraries]
+# KotlinX
+kotlinx-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "kotlinx-serialization" }
+kotlinx-coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "kotlinx-coroutines" }
+
+# Android
+androidx-activity-ktx = { module = "androidx.activity:activity-ktx", version.ref = "activity-ktx" }
+play-services-auth = { module = "com.google.android.gms:play-services-auth", version.ref = "play-services-auth" }
+
+[plugins]
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+kotlin-serialization = { id = "org.jetbrains.kotlin.plugin.serialization", version.ref = "kotlin" }
+android-library = { id = "com.android.library", version.ref = "agp" }
+spm4kmp = { id = "io.github.frankois944.spmForKmp", version.ref = "spm4kmp" }
