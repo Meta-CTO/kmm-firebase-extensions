@@ -49,6 +49,7 @@ kotlin {
 
     swiftPackageConfig {
         create(dependencies) {
+            linkerOpts = listOf("-ObjC")
             minIos = "15.0"
             dependency {
                 remotePackageVersion(
