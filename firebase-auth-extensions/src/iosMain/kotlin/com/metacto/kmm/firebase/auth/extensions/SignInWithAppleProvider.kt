@@ -81,14 +81,18 @@ class SignInWithAppleProvider(
     private val presentationAnchor: ASPresentationAnchor
 ) {
     private var controller: ASAuthorizationController? = null
+    private var delegate: AppleSignInDelegate? = null
 
     suspend fun start(): AuthenticationMetadata {
         val deferred = CompletableDeferred<AuthenticationMetadata>()
 
-        val delegate = AppleSignInDelegate(
+        delegate = AppleSignInDelegate(
             deferred = deferred,
             presentationAnchor = presentationAnchor,
-            onComplete = { controller = null }
+            onComplete = {
+                controller = null
+                delegate = null
+            }
         )
 
         val request = ASAuthorizationAppleIDProvider().createRequest()
@@ -100,6 +104,7 @@ class SignInWithAppleProvider(
 
         deferred.invokeOnCompletion {
             controller = null
+            delegate = null
         }
 
         controller?.performRequests()
