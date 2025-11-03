@@ -10,9 +10,6 @@ import com.metacto.kmm.logger.Logger
 import com.metacto.kmm.remoteconfig.common.RemoteConfigProvider
 import com.metacto.kmm.sharedpreferences.KmmPreference
 import com.metacto.kmm.sharedpreferences.putObject
-import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
-import kotlinx.coroutines.suspendCancellableCoroutine
 
 actual class FirebaseRemoteConfigsProvider actual constructor(
     private val remoteConfigPreferences: KmmPreference
@@ -27,22 +24,14 @@ actual class FirebaseRemoteConfigsProvider actual constructor(
     }
 
     private suspend fun setSettings(minimumFetchIntervalSeconds: Long) {
-        return suspendCancellableCoroutine { continuation ->
-            try {
-                val settings = FirebaseRemoteConfigSettings.Builder()
-                    .setMinimumFetchIntervalInSeconds(minimumFetchIntervalSeconds).build()
-                firebaseConfigs.setConfigSettingsAsync(settings)
-                    .addOnSuccessListener {
-                        logger.log("${RemoteConfigConstants.LOG_TAG}: Updated settings")
-                        continuation.resume(Unit)
-                    }.addOnFailureListener { error ->
-                        logger.log("${RemoteConfigConstants.LOG_TAG}: Error: (${error.message})")
-                        continuation.resumeWithException(error)
-                    }
-            } catch (error: Throwable) {
-                logger.log("${RemoteConfigConstants.LOG_TAG}: Error: (${error.message})")
-                continuation.resumeWithException(error)
-            }
+        try {
+            val settings = FirebaseRemoteConfigSettings.Builder()
+                .setMinimumFetchIntervalInSeconds(minimumFetchIntervalSeconds).build()
+            firebaseConfigs.setConfigSettingsAsync(settings).await()
+            logger.log("${RemoteConfigConstants.LOG_TAG}: Updated settings")
+        } catch (error: Throwable) {
+            logger.log("${RemoteConfigConstants.LOG_TAG}: Error: (${error.message})")
+            throw error
         }
     }
 
@@ -52,51 +41,36 @@ actual class FirebaseRemoteConfigsProvider actual constructor(
             remoteConfigPreferences.getJsonObject(RemoteConfigConstants.CACHED_REMOTE_CONFIGS)
                 ?: return
 
-        return suspendCancellableCoroutine { continuation ->
-            try {
-                // Set defaults
-                firebaseConfigs.setDefaultsAsync(configsObject)
-                    .addOnSuccessListener {
-                        logger.log("${RemoteConfigConstants.LOG_TAG}: Updated settings")
-                        continuation.resume(Unit)
-                    }.addOnFailureListener { error ->
-                        logger.log("${RemoteConfigConstants.LOG_TAG}: Error: (${error.message})")
-                        continuation.resumeWithException(error)
-                    }
-            } catch (error: Throwable) {
-                logger.log("${RemoteConfigConstants.LOG_TAG}: Error: (${error.message})")
-                continuation.resumeWithException(error)
-            }
+        try {
+            // Set defaults
+            firebaseConfigs.setDefaultsAsync(configsObject).await()
+            logger.log("${RemoteConfigConstants.LOG_TAG}: Updated settings")
+        } catch (error: Throwable) {
+            logger.log("${RemoteConfigConstants.LOG_TAG}: Error: (${error.message})")
+            throw error
         }
     }
 
     private suspend fun fetchConfigsFromRemote() {
-        return suspendCancellableCoroutine { continuation ->
-            try {
-                // Fetch
-                firebaseConfigs.fetchAndActivate()
-                    .addOnSuccessListener {
-                        val updatedConfigs = firebaseConfigs.all
-                            .map { (key, value) -> key to value.asString() }
-                            .toMap()
-                            .toJsonObject()
+        try {
+            // Fetch
+            firebaseConfigs.fetchAndActivate().await()
 
-                        // Then cache it
-                        remoteConfigPreferences.putObject(
-                            RemoteConfigConstants.CACHED_REMOTE_CONFIGS,
-                            updatedConfigs
-                        )
+            val updatedConfigs = firebaseConfigs.all
+                .map { (key, value) -> key to value.asString() }
+                .toMap()
+                .toJsonObject()
 
-                        logger.log("${RemoteConfigConstants.LOG_TAG}: Updated configs from remote ($updatedConfigs)")
-                        continuation.resume(Unit)
-                    }.addOnFailureListener { error ->
-                        logger.log("${RemoteConfigConstants.LOG_TAG}: Error: (${error.message})")
-                        continuation.resumeWithException(error)
-                    }
-            } catch (error: Throwable) {
-                logger.log("${RemoteConfigConstants.LOG_TAG}: Error: (${error.message})")
-                continuation.resumeWithException(error)
-            }
+            // Then cache it
+            remoteConfigPreferences.putObject(
+                RemoteConfigConstants.CACHED_REMOTE_CONFIGS,
+                updatedConfigs
+            )
+
+            logger.log("${RemoteConfigConstants.LOG_TAG}: Updated configs from remote ($updatedConfigs)")
+        } catch (error: Throwable) {
+            logger.log("${RemoteConfigConstants.LOG_TAG}: Error: (${error.message})")
+            throw error
         }
     }
 

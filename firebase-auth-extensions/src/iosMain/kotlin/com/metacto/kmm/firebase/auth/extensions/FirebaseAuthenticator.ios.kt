@@ -15,28 +15,7 @@ import kotlin.coroutines.resumeWithException
 
 @Throws(Throwable::class)
 actual suspend fun FirebaseAuthenticator.getIdToken(forceRefresh: Boolean): String {
-    return suspendCancellableCoroutine { continuation ->
-        val user = FIRAuth.auth().currentUser()
-
-        if (user == null) {
-            continuation.resumeWithException(Throwable("Unable to get id token from a null user"))
-            return@suspendCancellableCoroutine
-        }
-
-        user.getIDTokenForcingRefresh(forceRefresh) { token, error ->
-            if (error != null) {
-                continuation.resumeWithException(Throwable(error.localizedDescription))
-                return@getIDTokenForcingRefresh
-            }
-
-            if (token == null) {
-                continuation.resumeWithException(Throwable("Unable to get id token due to unknown error"))
-                return@getIDTokenForcingRefresh
-            }
-
-            continuation.resume(token)
-        }
-    }
+    return FIRAuth.currentUserOrThrow().idToken(forceRefresh)
 }
 
 @Throws(Throwable::class)
@@ -44,17 +23,9 @@ actual suspend fun FirebaseAuthenticator.sendSignInLinkToEmail(
     email: String,
     actionCodeSettings: ActionCodeSettings
 ) {
-    return suspendCancellableCoroutine { continuation ->
-        val actionCodeSettingsIOS = actionCodeSettings.toIOS()
-
-        FIRAuth.auth().sendSignInLinkToEmail(email, actionCodeSettingsIOS) { error ->
-            if (error != null) {
-                continuation.resumeWithException(Throwable(error.localizedDescription))
-                return@sendSignInLinkToEmail
-            }
-
-            continuation.resume(Unit)
-        }
+    val actionCodeSettingsIOS = actionCodeSettings.toIOS()
+    awaitCallback(onSuccess = Unit) { callback ->
+        FIRAuth.auth().sendSignInLinkToEmail(email, actionCodeSettingsIOS, callback)
     }
 }
 
@@ -63,7 +34,7 @@ actual suspend fun FirebaseAuthenticator.signInWithEmailAndPassword(
     email: String,
     password: String
 ): String {
-    return suspendCancellableCoroutine { continuation ->
+    val user = suspendCancellableCoroutine { continuation ->
         FIRAuth.auth().signInWithEmail(email = email, password = password) { result, error ->
             if (error != null) {
                 continuation.resumeWithException(Throwable(error.localizedDescription))
@@ -76,21 +47,11 @@ actual suspend fun FirebaseAuthenticator.signInWithEmailAndPassword(
                 return@signInWithEmail
             }
 
-            user.getIDTokenForcingRefresh(true) { token, tokenError ->
-                if (tokenError != null) {
-                    continuation.resumeWithException(Throwable(tokenError.localizedDescription))
-                    return@getIDTokenForcingRefresh
-                }
-
-                if (token == null) {
-                    continuation.resumeWithException(Throwable("Unable to get id token due to unknown error"))
-                    return@getIDTokenForcingRefresh
-                }
-
-                continuation.resume(token)
-            }
+            continuation.resume(user)
         }
     }
+
+    return user.idToken(true)
 }
 
 @Throws(Throwable::class)
@@ -98,21 +59,24 @@ actual suspend fun FirebaseAuthenticator.sendPasswordResetEmail(
     email: String,
     actionCodeSettings: ActionCodeSettings?
 ): Boolean {
-    return suspendCancellableCoroutine { continuation ->
-        val settings = actionCodeSettings?.toIOS()
-
-        FIRAuth.auth().sendPasswordResetWithEmail(email = email, actionCodeSettings = settings) { error ->
-            continuation.resume(error == null)
+    val settings = actionCodeSettings?.toIOS()
+    return try {
+        awaitCallback(onSuccess = true) { callback ->
+            FIRAuth.auth().sendPasswordResetWithEmail(email = email, actionCodeSettings = settings, callback)
         }
+    } catch (e: Throwable) {
+        false
     }
 }
 
 @Throws(Throwable::class)
 actual suspend fun FirebaseAuthenticator.sendEmailVerification(): Boolean {
-    return suspendCancellableCoroutine { continuation ->
-        FIRAuth.auth().currentUser()?.sendEmailVerificationWithCompletion { emailError ->
-            continuation.resume(emailError == null)
+    return try {
+        awaitCallback(onSuccess = true) { callback ->
+            FIRAuth.auth().currentUser()?.sendEmailVerificationWithCompletion(callback)
         }
+    } catch (e: Throwable) {
+        false
     }
 }
 
@@ -122,7 +86,7 @@ actual suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(
     password: String,
     actionCodeSettings: ActionCodeSettings?
 ): String {
-    return suspendCancellableCoroutine { continuation ->
+    val user = suspendCancellableCoroutine { continuation ->
         FIRAuth.auth().createUserWithEmail(email = email, password = password) { result, error ->
             if (error != null) {
                 val errorDescription = error.localizedDescription
@@ -154,74 +118,38 @@ actual suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(
                 return@createUserWithEmail
             }
 
-            val settings = actionCodeSettings?.toIOS()
-            if (settings != null) {
-                user.sendEmailVerificationWithActionCodeSettings(settings) { emailError ->
-                    if (emailError != null) {
-                        continuation.resumeWithException(Throwable(emailError.localizedDescription))
-                        return@sendEmailVerificationWithActionCodeSettings
-                    }
-
-                    user.getIDTokenForcingRefresh(true) { token, tokenError ->
-                        if (tokenError != null) {
-                            continuation.resumeWithException(Throwable(tokenError.localizedDescription))
-                            return@getIDTokenForcingRefresh
-                        }
-
-                        if (token == null) {
-                            continuation.resumeWithException(Throwable("Unable to get id token due to unknown error"))
-                            return@getIDTokenForcingRefresh
-                        }
-
-                        continuation.resume(token)
-                    }
-                }
-            } else {
-                user.sendEmailVerificationWithCompletion { emailError ->
-                    if (emailError != null) {
-                        continuation.resumeWithException(Throwable(emailError.localizedDescription))
-                        return@sendEmailVerificationWithCompletion
-                    }
-
-                    user.getIDTokenForcingRefresh(true) { token, tokenError ->
-                        if (tokenError != null) {
-                            continuation.resumeWithException(Throwable(tokenError.localizedDescription))
-                            return@getIDTokenForcingRefresh
-                        }
-
-                        if (token == null) {
-                            continuation.resumeWithException(Throwable("Unable to get id token due to unknown error"))
-                            return@getIDTokenForcingRefresh
-                        }
-
-                        continuation.resume(token)
-                    }
-                }
-            }
+            continuation.resume(user)
         }
     }
+
+    val settings = actionCodeSettings?.toIOS()
+    if (settings != null) {
+        awaitCallback(onSuccess = Unit) { callback ->
+            user.sendEmailVerificationWithActionCodeSettings(settings, callback)
+        }
+    } else {
+        awaitCallback(onSuccess = Unit) { callback ->
+            user.sendEmailVerificationWithCompletion(callback)
+        }
+    }
+
+    return user.idToken(true)
 }
 
 @Throws(Throwable::class)
 actual suspend fun FirebaseAuthenticator.isCurrentUserEmailVerified(): Boolean {
     val user = FIRAuth.auth().currentUser() ?: return false
 
-    return suspendCancellableCoroutine { continuation ->
-        user.reloadWithCompletion { error ->
-            if (error != null) {
-                continuation.resumeWithException(Throwable(error.localizedDescription))
-                return@reloadWithCompletion
-            }
-
-            val isVerified = FIRAuth.auth().currentUser()?.emailVerified() ?: false
-            continuation.resume(isVerified)
-        }
+    awaitCallback(onSuccess = Unit) { callback ->
+        user.reloadWithCompletion(callback)
     }
+
+    return FIRAuth.auth().currentUser()?.emailVerified() ?: false
 }
 
 @Throws(Throwable::class)
 actual suspend fun FirebaseAuthenticator.signInWithEmailLink(email: String, link: String): String {
-    return suspendCancellableCoroutine { continuation ->
+    val user = suspendCancellableCoroutine { continuation ->
         FIRAuth.auth().signInWithEmail(email = email, link = link) { result, error ->
             if (error != null) {
                 continuation.resumeWithException(Throwable(error.localizedDescription))
@@ -234,21 +162,11 @@ actual suspend fun FirebaseAuthenticator.signInWithEmailLink(email: String, link
                 return@signInWithEmail
             }
 
-            user.getIDTokenForcingRefresh(true) { token, tokenError ->
-                if (tokenError != null) {
-                    continuation.resumeWithException(Throwable(tokenError.localizedDescription))
-                    return@getIDTokenForcingRefresh
-                }
-
-                if (token == null) {
-                    continuation.resumeWithException(Throwable("Unable to get id token due to unknown error"))
-                    return@getIDTokenForcingRefresh
-                }
-
-                continuation.resume(token)
-            }
+            continuation.resume(user)
         }
     }
+
+    return user.idToken(true)
 }
 
 @Throws(Throwable::class)
@@ -256,10 +174,10 @@ actual suspend fun FirebaseAuthenticator.verifyPhoneNumber(
     otp: String,
     verificationId: String
 ): String {
-    return suspendCancellableCoroutine { continuation ->
-        val credential = FirebaseAuth.FIRPhoneAuthProvider.provider()
-            .credentialWithVerificationID(verificationId, otp)
+    val credential = FirebaseAuth.FIRPhoneAuthProvider.provider()
+        .credentialWithVerificationID(verificationId, otp)
 
+    val user = suspendCancellableCoroutine { continuation ->
         FIRAuth.auth().signInWithCredential(credential) { result, error ->
             if (error != null) {
                 continuation.resumeWithException(Throwable(error.localizedDescription))
@@ -272,21 +190,11 @@ actual suspend fun FirebaseAuthenticator.verifyPhoneNumber(
                 return@signInWithCredential
             }
 
-            user.getIDTokenForcingRefresh(true) { token, tokenError ->
-                if (tokenError != null) {
-                    continuation.resumeWithException(Throwable(tokenError.localizedDescription))
-                    return@getIDTokenForcingRefresh
-                }
-
-                if (token == null) {
-                    continuation.resumeWithException(Throwable("Unable to get id token due to unknown error"))
-                    return@getIDTokenForcingRefresh
-                }
-
-                continuation.resume(token)
-            }
+            continuation.resume(user)
         }
     }
+
+    return user.idToken(true)
 }
 
 @Throws(Throwable::class)
