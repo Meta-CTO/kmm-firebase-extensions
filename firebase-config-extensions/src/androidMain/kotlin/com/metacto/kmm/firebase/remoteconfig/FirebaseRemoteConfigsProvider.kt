@@ -4,14 +4,14 @@ import com.google.firebase.Firebase
 import com.google.firebase.remoteconfig.FirebaseRemoteConfigSettings
 import com.google.firebase.remoteconfig.remoteConfig
 import com.metacto.kmm.firebase.remoteconfig.constants.RemoteConfigConstants
-import com.metacto.kmm.firebase.remoteconfig.extensions.exceptionIfActive
 import com.metacto.kmm.firebase.remoteconfig.extensions.getJsonObject
-import com.metacto.kmm.firebase.remoteconfig.extensions.resumeIfActive
 import com.metacto.kmm.firebase.remoteconfig.extensions.toJsonObject
 import com.metacto.kmm.logger.Logger
 import com.metacto.kmm.remoteconfig.common.RemoteConfigProvider
 import com.metacto.kmm.sharedpreferences.KmmPreference
 import com.metacto.kmm.sharedpreferences.putObject
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlinx.coroutines.suspendCancellableCoroutine
 
 actual class FirebaseRemoteConfigsProvider actual constructor(
@@ -34,14 +34,14 @@ actual class FirebaseRemoteConfigsProvider actual constructor(
                 firebaseConfigs.setConfigSettingsAsync(settings)
                     .addOnSuccessListener {
                         logger.log("${RemoteConfigConstants.LOG_TAG}: Updated settings")
-                        continuation.resumeIfActive(Unit)
+                        continuation.resume(Unit)
                     }.addOnFailureListener { error ->
                         logger.log("${RemoteConfigConstants.LOG_TAG}: Error: (${error.message})")
-                        continuation.exceptionIfActive(error)
+                        continuation.resumeWithException(error)
                     }
             } catch (error: Throwable) {
                 logger.log("${RemoteConfigConstants.LOG_TAG}: Error: (${error.message})")
-                continuation.exceptionIfActive(error)
+                continuation.resumeWithException(error)
             }
         }
     }
@@ -58,13 +58,14 @@ actual class FirebaseRemoteConfigsProvider actual constructor(
                 firebaseConfigs.setDefaultsAsync(configsObject)
                     .addOnSuccessListener {
                         logger.log("${RemoteConfigConstants.LOG_TAG}: Updated settings")
-                        continuation.resumeIfActive(Unit)
+                        continuation.resume(Unit)
                     }.addOnFailureListener { error ->
                         logger.log("${RemoteConfigConstants.LOG_TAG}: Error: (${error.message})")
-                        continuation.exceptionIfActive(error)
+                        continuation.resumeWithException(error)
                     }
             } catch (error: Throwable) {
                 logger.log("${RemoteConfigConstants.LOG_TAG}: Error: (${error.message})")
+                continuation.resumeWithException(error)
             }
         }
     }
@@ -87,14 +88,14 @@ actual class FirebaseRemoteConfigsProvider actual constructor(
                         )
 
                         logger.log("${RemoteConfigConstants.LOG_TAG}: Updated configs from remote ($updatedConfigs)")
-                        continuation.resumeIfActive(Unit)
+                        continuation.resume(Unit)
                     }.addOnFailureListener { error ->
                         logger.log("${RemoteConfigConstants.LOG_TAG}: Error: (${error.message})")
-                        continuation.exceptionIfActive(error)
+                        continuation.resumeWithException(error)
                     }
             } catch (error: Throwable) {
                 logger.log("${RemoteConfigConstants.LOG_TAG}: Error: (${error.message})")
-                continuation.exceptionIfActive(error)
+                continuation.resumeWithException(error)
             }
         }
     }

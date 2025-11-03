@@ -8,7 +8,10 @@ import FirebaseAuth.FIROAuthProvider
 import com.metacto.kmm.auth.common.AuthOptions
 import com.metacto.kmm.auth.common.AuthenticationMetadata
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
 @OptIn(ExperimentalForeignApi::class)
 actual class AuthClient : AuthProvider {
@@ -27,34 +30,42 @@ actual class AuthClient : AuthProvider {
             accessToken = result.accessToken.orEmpty()
         )
 
-        return suspendCancellableCoroutine { cont ->
+        return suspendCancellableCoroutine { continuation ->
             FIRAuth.auth().signInWithCredential(credential) { data, nsError ->
                 if (nsError != null) {
-                    cont.exceptionIfActive(Throwable(nsError.localizedDescription))
-                } else {
-                    data?.user()?.getIDTokenForcingRefresh(true) { token, nsError ->
-                        if (nsError != null) {
-                            cont.exceptionIfActive(Throwable(nsError.localizedDescription))
-                        } else if (token != null) {
-                            cont.resumeIfActive(
-                                AuthenticationMetadata(
-                                    token,
-                                    result.profileMetadata
-                                )
-                            )
-                        } else {
-                            cont.exceptionIfActive(Throwable("Token cannot be null"))
-                        }
+                    continuation.resumeWithException(Throwable(nsError.localizedDescription))
+                    return@signInWithCredential
+                }
+
+                data?.user()?.getIDTokenForcingRefresh(true) { token, tokenError ->
+                    if (tokenError != null) {
+                        continuation.resumeWithException(Throwable(tokenError.localizedDescription))
+                        return@getIDTokenForcingRefresh
                     }
+
+                    if (token == null) {
+                        continuation.resumeWithException(Throwable("Token cannot be null"))
+                        return@getIDTokenForcingRefresh
+                    }
+
+                    // Single resume point for success
+                    continuation.resume(
+                        AuthenticationMetadata(
+                            token,
+                            result.profileMetadata
+                        )
+                    )
                 }
             }
         }
     }
 
+    @OptIn(ExperimentalCoroutinesApi::class)
     actual override suspend fun signInWithApple(): AuthenticationMetadata {
         val appleProvider = SignInWithAppleProvider(
             presentationAnchor = options.presentationAnchor
         )
+
         val result = appleProvider.start()
         val credential = FIROAuthProvider.credentialWithProviderID(
             providerID = "apple.com",
@@ -63,29 +74,35 @@ actual class AuthClient : AuthProvider {
             accessToken = result.accessToken.orEmpty()
         )
 
-        return suspendCancellableCoroutine { cont ->
+        return suspendCancellableCoroutine { continuation ->
             FIRAuth.auth().signInWithCredential(credential) { data, nsError ->
                 if (nsError != null) {
-                    cont.exceptionIfActive(Throwable(nsError.localizedDescription))
-                } else {
-                    if (data?.user() == null) {
-                        cont.exceptionIfActive(Throwable("User cannot be null"))
-                        return@signInWithCredential
+                    continuation.resumeWithException(Throwable(nsError.localizedDescription))
+                    return@signInWithCredential
+                }
+
+                if (data?.user() == null) {
+                    continuation.resumeWithException(Throwable("User cannot be null"))
+                    return@signInWithCredential
+                }
+
+                data.user().getIDTokenForcingRefresh(true) { token, tokenError ->
+                    if (tokenError != null) {
+                        continuation.resumeWithException(Throwable(tokenError.localizedDescription))
+                        return@getIDTokenForcingRefresh
                     }
-                    data.user().getIDTokenForcingRefresh(true) { token, newError ->
-                        if (newError != null) {
-                            cont.exceptionIfActive(Throwable(newError.localizedDescription))
-                        } else if (token != null) {
-                            cont.resumeIfActive(
-                                AuthenticationMetadata(
-                                    token,
-                                    result.profileMetadata
-                                )
-                            )
-                        } else {
-                            cont.exceptionIfActive(Throwable("Token cannot be null"))
-                        }
+
+                    if (token == null) {
+                        continuation.resumeWithException(Throwable("Token cannot be null"))
+                        return@getIDTokenForcingRefresh
                     }
+
+                    continuation.resume(
+                        AuthenticationMetadata(
+                            token,
+                            result.profileMetadata
+                        )
+                    )
                 }
             }
         }

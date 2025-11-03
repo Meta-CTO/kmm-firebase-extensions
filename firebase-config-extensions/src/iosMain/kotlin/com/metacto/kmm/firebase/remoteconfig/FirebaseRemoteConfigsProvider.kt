@@ -1,9 +1,7 @@
 package com.metacto.kmm.firebase.remoteconfig
 
 import com.metacto.kmm.firebase.remoteconfig.constants.RemoteConfigConstants
-import com.metacto.kmm.firebase.remoteconfig.extensions.exceptionIfActive
 import com.metacto.kmm.firebase.remoteconfig.extensions.getJsonObject
-import com.metacto.kmm.firebase.remoteconfig.extensions.resumeIfActive
 import com.metacto.kmm.firebase.remoteconfig.extensions.toJsonObject
 import com.metacto.kmm.logger.Logger
 import com.metacto.kmm.remoteconfig.common.RemoteConfigProvider
@@ -11,6 +9,8 @@ import com.metacto.kmm.sharedpreferences.KmmPreference
 import com.metacto.kmm.sharedpreferences.putObject
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.boolean
 import kotlinx.serialization.json.booleanOrNull
@@ -38,17 +38,16 @@ actual class FirebaseRemoteConfigsProvider actual constructor(
                 firebaseConfigs.setSettingsWithMinFetchIntervalSeconds(minimumFetchIntervalSeconds.toInt(), completion = { error ->
                     if (error != null) {
                         logger.log("${RemoteConfigConstants.LOG_TAG}: Error: (${error.localizedDescription})")
-                        continuation.exceptionIfActive(
-                            Throwable(error.localizedDescription)
-                        )
-                    } else {
-                        logger.log("${RemoteConfigConstants.LOG_TAG}: Updated settings")
-                        continuation.resumeIfActive(Unit)
+                        continuation.resumeWithException(Throwable(error.localizedDescription))
+                        return@setSettingsWithMinFetchIntervalSeconds
                     }
+
+                    logger.log("${RemoteConfigConstants.LOG_TAG}: Updated settings")
+                    continuation.resume(Unit)
                 })
             } catch (error: Throwable) {
                 logger.log("${RemoteConfigConstants.LOG_TAG}: Error: (${error.message})")
-                continuation.exceptionIfActive(error)
+                continuation.resumeWithException(error)
             }
         }
     }
@@ -80,16 +79,16 @@ actual class FirebaseRemoteConfigsProvider actual constructor(
                 firebaseConfigs.loadDefaultsFrom(mapValues.toMap(), { error ->
                     if (error != null) {
                         logger.log("${RemoteConfigConstants.LOG_TAG}: Error: (${error.localizedDescription})")
-                        continuation.exceptionIfActive(
-                            Throwable(error.localizedDescription)
-                        )
-                    } else {
-                        logger.log("${RemoteConfigConstants.LOG_TAG}: Updated settings")
-                        continuation.resumeIfActive(Unit)
+                        continuation.resumeWithException(Throwable(error.localizedDescription))
+                        return@loadDefaultsFrom
                     }
+
+                    logger.log("${RemoteConfigConstants.LOG_TAG}: Updated settings")
+                    continuation.resume(Unit)
                 })
             } catch (error: Throwable) {
                 logger.log("${RemoteConfigConstants.LOG_TAG}: Error: (${error.message})")
+                continuation.resumeWithException(error)
             }
         }
     }
@@ -101,28 +100,27 @@ actual class FirebaseRemoteConfigsProvider actual constructor(
                 firebaseConfigs.fetchConfigsFromRemoteWithCompletion({ values, error ->
                     if (error != null) {
                         logger.log("${RemoteConfigConstants.LOG_TAG}: Error: (${error.localizedDescription})")
-                        continuation.exceptionIfActive(
-                            Throwable(error.localizedDescription)
-                        )
-                    } else {
-                        val updatedConfigs = values?.map { (key, value) -> key.toString() to value.toString() }
-                            ?.toMap()
-                            .orEmpty()
-                            .toJsonObject()
-
-                        // Then cache it
-                        remoteConfigPreferences.putObject(
-                            RemoteConfigConstants.CACHED_REMOTE_CONFIGS,
-                            updatedConfigs
-                        )
-
-                        logger.log("${RemoteConfigConstants.LOG_TAG}: Updated configs from remote ($updatedConfigs)")
-                        continuation.resumeIfActive(Unit)
+                        continuation.resumeWithException(Throwable(error.localizedDescription))
+                        return@fetchConfigsFromRemoteWithCompletion
                     }
+
+                    val updatedConfigs = values?.map { (key, value) -> key.toString() to value.toString() }
+                        ?.toMap()
+                        .orEmpty()
+                        .toJsonObject()
+
+                    // Then cache it
+                    remoteConfigPreferences.putObject(
+                        RemoteConfigConstants.CACHED_REMOTE_CONFIGS,
+                        updatedConfigs
+                    )
+
+                    logger.log("${RemoteConfigConstants.LOG_TAG}: Updated configs from remote ($updatedConfigs)")
+                    continuation.resume(Unit)
                 })
             } catch (error: Throwable) {
                 logger.log("${RemoteConfigConstants.LOG_TAG}: Error: (${error.message})")
-                continuation.exceptionIfActive(error)
+                continuation.resumeWithException(error)
             }
         }
     }
