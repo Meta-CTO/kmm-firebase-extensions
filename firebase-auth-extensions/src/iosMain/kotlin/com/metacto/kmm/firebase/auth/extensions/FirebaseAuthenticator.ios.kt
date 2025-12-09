@@ -37,7 +37,27 @@ actual suspend fun FirebaseAuthenticator.signInWithEmailAndPassword(
     val user = suspendCancellableCoroutine { continuation ->
         FIRAuth.auth().signInWithEmail(email = email, password = password) { result, error ->
             if (error != null) {
-                continuation.resumeWithException(Throwable(error.localizedDescription))
+                val errorDescription = error.localizedDescription
+
+                val exception = when {
+                    error.code == 17009L || errorDescription.contains("wrong password", ignoreCase = true)
+                            || errorDescription.contains("password is invalid", ignoreCase = true) -> {
+                        WrongPasswordThrowable()
+                    }
+                    error.code == 17011L || errorDescription.contains("no user record", ignoreCase = true)
+                            || errorDescription.contains("user not found", ignoreCase = true) -> {
+                        UserNotFoundThrowable()
+                    }
+                    error.code == 17008L || errorDescription.contains("badly formatted", ignoreCase = true)
+                            || errorDescription.contains("invalid email", ignoreCase = true) -> {
+                        InvalidEmailThrowable()
+                    }
+                    else -> {
+                        InvalidCredentialsThrowable(errorDescription)
+                    }
+                }
+
+                continuation.resumeWithException(exception)
                 return@signInWithEmail
             }
 
