@@ -15,6 +15,12 @@ class WeakPasswordThrowable(message: String) : Throwable("Password is too weak: 
 
 class InvalidEmailThrowable(message: String = "Invalid email format") : Throwable(message)
 
+open class InvalidCredentialsThrowable(message: String = "Invalid email or password") : Throwable(message)
+
+class WrongPasswordThrowable(message: String = "Wrong password") : InvalidCredentialsThrowable(message)
+
+class UserNotFoundThrowable(message: String = "User not found") : InvalidCredentialsThrowable(message)
+
 @Throws(Throwable::class)
 expect suspend fun FirebaseAuthenticator.getIdToken(forceRefresh: Boolean): String
 

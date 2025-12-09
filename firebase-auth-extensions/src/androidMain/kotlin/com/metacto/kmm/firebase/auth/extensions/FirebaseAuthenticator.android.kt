@@ -3,6 +3,7 @@ package com.metacto.kmm.firebase.auth.extensions
 import com.google.firebase.Firebase
 import com.google.firebase.FirebaseException
 import com.google.firebase.auth.FirebaseAuthInvalidCredentialsException
+import com.google.firebase.auth.FirebaseAuthInvalidUserException
 import com.google.firebase.auth.FirebaseAuthUserCollisionException
 import com.google.firebase.auth.FirebaseAuthWeakPasswordException
 import com.google.firebase.auth.PhoneAuthCredential
@@ -26,8 +27,26 @@ actual suspend fun FirebaseAuthenticator.signInWithEmailAndPassword(
     email: String,
     password: String
 ): String {
-    val result = Firebase.auth.signInWithEmailAndPassword(email, password).await()
-    val user = result.user ?: throw Throwable("User cannot be null")
+    val user = try {
+        val result = Firebase.auth.signInWithEmailAndPassword(email, password).await()
+        result.user ?: throw Throwable("User cannot be null")
+    } catch (exception: Throwable) {
+        val error = when (exception) {
+            is FirebaseAuthInvalidCredentialsException -> {
+                // This can be either invalid email format or wrong password
+                if (exception.message?.contains("password is invalid", ignoreCase = true) == true) {
+                    WrongPasswordThrowable()
+                } else {
+                    InvalidCredentialsThrowable()
+                }
+            }
+            is FirebaseAuthInvalidUserException -> {
+                UserNotFoundThrowable()
+            }
+            else -> exception
+        }
+        throw error
+    }
     return user.idToken(true)
 }
 
