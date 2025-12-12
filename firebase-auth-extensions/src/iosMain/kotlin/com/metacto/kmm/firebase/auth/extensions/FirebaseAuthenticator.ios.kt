@@ -218,6 +218,31 @@ actual suspend fun FirebaseAuthenticator.verifyPhoneNumber(
 }
 
 @Throws(Throwable::class)
+actual suspend fun FirebaseAuthenticator.signInWithCustomToken(
+    token: String,
+): String {
+
+    val user = suspendCancellableCoroutine { continuation ->
+        FIRAuth.auth().signInWithCustomToken(token) { result, error ->
+            if (error != null) {
+                continuation.resumeWithException(Throwable(error.localizedDescription))
+                return@signInWithCustomToken
+            }
+
+            val user = result?.user()
+            if (user == null) {
+                continuation.resumeWithException(Throwable("Unable to get id token from a null user"))
+                return@signInWithCustomToken
+            }
+
+            continuation.resume(user)
+        }
+    }
+
+    return user.idToken(true)
+}
+
+@Throws(Throwable::class)
 actual suspend fun FirebaseAuthenticator.sendSignInOTPToPhone(
     phoneNumber: String,
     phoneVerifierProvider: PhoneVerifierProvider?

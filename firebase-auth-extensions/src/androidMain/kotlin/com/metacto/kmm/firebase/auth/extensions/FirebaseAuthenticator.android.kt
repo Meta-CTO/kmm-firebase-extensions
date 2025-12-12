@@ -146,6 +146,15 @@ actual suspend fun FirebaseAuthenticator.verifyPhoneNumber(
 }
 
 @Throws(Throwable::class)
+actual suspend fun FirebaseAuthenticator.signInWithCustomToken(
+    token: String,
+): String {
+    val result = Firebase.auth.signInWithCustomToken(token).await()
+    val user = result.user ?: throw Throwable("User cannot be null")
+    return user.idToken(true)
+}
+
+@Throws(Throwable::class)
 actual suspend fun FirebaseAuthenticator.sendSignInOTPToPhone(
     phoneNumber: String,
     phoneVerifierProvider: PhoneVerifierProvider?

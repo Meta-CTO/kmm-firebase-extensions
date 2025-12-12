@@ -55,6 +55,9 @@ expect suspend fun FirebaseAuthenticator.verifyPhoneNumber(otp: String, verifica
 expect suspend fun FirebaseAuthenticator.sendSignInOTPToPhone(phoneNumber: String, phoneVerifierProvider: PhoneVerifierProvider?): PhoneVerifierMetadata
 
 @Throws(Throwable::class)
+expect suspend fun FirebaseAuthenticator.signInWithCustomToken(token: String): String
+
+@Throws(Throwable::class)
 expect suspend fun FirebaseAuthenticator.logout()
 
 class FirebaseAuthenticator(
@@ -173,6 +176,11 @@ class FirebaseAuthenticator(
     @Throws(Throwable::class)
     override suspend fun isCurrentEmailVerified(): Boolean {
         return isCurrentUserEmailVerified()
+    }
+
+    override suspend fun authenticateWithCustomToken(token: String): String {
+        if (token.isEmpty()) throw Throwable("Token is null or empty, please try again.")
+        return signInWithCustomToken(token)
     }
 
     @Throws(Throwable::class)

@@ -44,5 +44,8 @@ interface Authenticator {
     suspend fun isCurrentEmailVerified(): Boolean
 
     @Throws(Throwable::class)
+    suspend fun authenticateWithCustomToken(token: String): String
+
+    @Throws(Throwable::class)
     suspend fun signOut()
 }
