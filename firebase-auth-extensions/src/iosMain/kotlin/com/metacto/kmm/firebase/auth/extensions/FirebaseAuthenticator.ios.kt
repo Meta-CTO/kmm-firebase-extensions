@@ -104,7 +104,8 @@ actual suspend fun FirebaseAuthenticator.sendEmailVerification(): Boolean {
 actual suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(
     email: String,
     password: String,
-    actionCodeSettings: ActionCodeSettings?
+    actionCodeSettings: ActionCodeSettings?,
+    shouldSendEmailVerification: Boolean
 ): String {
     val user = suspendCancellableCoroutine { continuation ->
         FIRAuth.auth().createUserWithEmail(email = email, password = password) { result, error ->
@@ -142,14 +143,16 @@ actual suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(
         }
     }
 
-    val settings = actionCodeSettings?.toIOS()
-    if (settings != null) {
-        awaitCallback(onSuccess = Unit) { callback ->
-            user.sendEmailVerificationWithActionCodeSettings(settings, callback)
-        }
-    } else {
-        awaitCallback(onSuccess = Unit) { callback ->
-            user.sendEmailVerificationWithCompletion(callback)
+    if(shouldSendEmailVerification) {
+        val settings = actionCodeSettings?.toIOS()
+        if (settings != null) {
+            awaitCallback(onSuccess = Unit) { callback ->
+                user.sendEmailVerificationWithActionCodeSettings(settings, callback)
+            }
+        } else {
+            awaitCallback(onSuccess = Unit) { callback ->
+                user.sendEmailVerificationWithCompletion(callback)
+            }
         }
     }
 

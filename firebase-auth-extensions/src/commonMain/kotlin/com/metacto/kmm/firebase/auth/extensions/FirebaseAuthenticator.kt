@@ -9,17 +9,21 @@ import com.metacto.kmm.firebase.auth.ActionCodeSettings
 import com.metacto.kmm.firebase.auth.extensions.constants.Constants
 import com.metacto.kmm.sharedpreferences.KmmPreference
 
-class EmailAlreadyExistsThrowable(message: String = "User with this email already exists") : Throwable(message)
+class EmailAlreadyExistsThrowable(message: String = "User with this email already exists") :
+    Throwable(message)
 
 class WeakPasswordThrowable(message: String) : Throwable("Password is too weak: $message")
 
 class InvalidEmailThrowable(message: String = "Invalid email format") : Throwable(message)
 
-open class InvalidCredentialsThrowable(message: String = "Invalid email or password") : Throwable(message)
+open class InvalidCredentialsThrowable(message: String = "Invalid email or password") :
+    Throwable(message)
 
-class WrongPasswordThrowable(message: String = "Wrong password") : InvalidCredentialsThrowable(message)
+class WrongPasswordThrowable(message: String = "Wrong password") :
+    InvalidCredentialsThrowable(message)
 
-class UserNotFoundThrowable(message: String = "User not found") : InvalidCredentialsThrowable(message)
+class UserNotFoundThrowable(message: String = "User not found") :
+    InvalidCredentialsThrowable(message)
 
 @Throws(Throwable::class)
 expect suspend fun FirebaseAuthenticator.getIdToken(forceRefresh: Boolean): String
@@ -34,13 +38,24 @@ expect suspend fun FirebaseAuthenticator.sendSignInLinkToEmail(
 expect suspend fun FirebaseAuthenticator.signInWithEmailLink(email: String, link: String): String
 
 @Throws(Throwable::class)
-expect suspend fun FirebaseAuthenticator.signInWithEmailAndPassword(email: String, password: String): String
+expect suspend fun FirebaseAuthenticator.signInWithEmailAndPassword(
+    email: String,
+    password: String
+): String
 
 @Throws(Throwable::class)
-expect suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(email: String, password: String, actionCodeSettings: ActionCodeSettings? = null): String
+expect suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(
+    email: String,
+    password: String,
+    actionCodeSettings: ActionCodeSettings? = null,
+    shouldSendEmailVerification: Boolean = true
+): String
 
 @Throws(Throwable::class)
-expect suspend fun FirebaseAuthenticator.sendPasswordResetEmail(email: String, actionCodeSettings: ActionCodeSettings? = null): Boolean
+expect suspend fun FirebaseAuthenticator.sendPasswordResetEmail(
+    email: String,
+    actionCodeSettings: ActionCodeSettings? = null
+): Boolean
 
 @Throws(Throwable::class)
 expect suspend fun FirebaseAuthenticator.sendEmailVerification(): Boolean
@@ -49,10 +64,16 @@ expect suspend fun FirebaseAuthenticator.sendEmailVerification(): Boolean
 expect suspend fun FirebaseAuthenticator.isCurrentUserEmailVerified(): Boolean
 
 @Throws(Throwable::class)
-expect suspend fun FirebaseAuthenticator.verifyPhoneNumber(otp: String, verificationId: String): String
+expect suspend fun FirebaseAuthenticator.verifyPhoneNumber(
+    otp: String,
+    verificationId: String
+): String
 
 @Throws(Throwable::class)
-expect suspend fun FirebaseAuthenticator.sendSignInOTPToPhone(phoneNumber: String, phoneVerifierProvider: PhoneVerifierProvider?): PhoneVerifierMetadata
+expect suspend fun FirebaseAuthenticator.sendSignInOTPToPhone(
+    phoneNumber: String,
+    phoneVerifierProvider: PhoneVerifierProvider?
+): PhoneVerifierMetadata
 
 @Throws(Throwable::class)
 expect suspend fun FirebaseAuthenticator.signInWithCustomToken(token: String): String
@@ -153,11 +174,20 @@ class FirebaseAuthenticator(
     }
 
     @Throws(Throwable::class)
-    override suspend fun signUpWithEmailPassword(email: String, password: String): String {
+    override suspend fun signUpWithEmailPassword(
+        email: String,
+        password: String,
+        shouldSendEmailVerification: Boolean
+    ): String {
         if (email.isEmpty() || password.isEmpty()) {
             throw InvalidEmailThrowable("Email or password cannot be empty")
         }
-        return signUpWithEmailAndPassword(email, password)
+        return signUpWithEmailAndPassword(
+            email,
+            password,
+            actionCodeSettings,
+            shouldSendEmailVerification
+        )
     }
 
     @Throws(Throwable::class)

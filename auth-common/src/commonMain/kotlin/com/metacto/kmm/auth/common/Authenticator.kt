@@ -32,7 +32,7 @@ interface Authenticator {
     suspend fun signInWithEmailPassword(email: String, password: String): String
 
     @Throws(Throwable::class)
-    suspend fun signUpWithEmailPassword(email: String, password: String): String
+    suspend fun signUpWithEmailPassword(email: String, password: String, shouldSendEmailVerification: Boolean = true): String
 
     @Throws(Throwable::class)
     suspend fun sendPasswordResetUsingEmail(email: String): Boolean

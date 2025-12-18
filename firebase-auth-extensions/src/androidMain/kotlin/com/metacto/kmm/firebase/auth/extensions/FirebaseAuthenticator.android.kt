@@ -79,9 +79,9 @@ actual suspend fun FirebaseAuthenticator.sendEmailVerification(): Boolean {
 actual suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(
     email: String,
     password: String,
-    actionCodeSettings: ActionCodeSettings?
+    actionCodeSettings: ActionCodeSettings?,
+    shouldSendEmailVerification: Boolean
 ): String {
-    val authActionCodeSettings = actionCodeSettings?.toAndroid()
 
     val user = try {
         val result = Firebase.auth.createUserWithEmailAndPassword(email, password).await()
@@ -98,13 +98,18 @@ actual suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(
         throw error
     }
 
-    val request = if (authActionCodeSettings != null) {
-        user.sendEmailVerification(authActionCodeSettings)
-    } else {
-        user.sendEmailVerification()
+    if(shouldSendEmailVerification) {
+        val authActionCodeSettings = actionCodeSettings?.toAndroid()
+
+        val request = if (authActionCodeSettings != null) {
+            user.sendEmailVerification(authActionCodeSettings)
+        } else {
+            user.sendEmailVerification()
+        }
+
+        request.await()
     }
 
-    request.await()
     return user.idToken(true)
 }
 
