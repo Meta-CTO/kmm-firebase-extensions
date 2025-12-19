@@ -167,7 +167,7 @@ actual suspend fun FirebaseAuthenticator.isCurrentUserEmailVerified(): Boolean {
         user.reloadWithCompletion(callback)
     }
 
-    return user()?.emailVerified() ?: false
+    return user.emailVerified()
 }
 
 @Throws(Throwable::class)
