@@ -117,7 +117,7 @@ actual suspend fun FirebaseAuthenticator.signUpWithEmailAndPassword(
 actual suspend fun FirebaseAuthenticator.isCurrentUserEmailVerified(): Boolean {
     val user = Firebase.auth.currentUser ?: return false
     user.reload().await()
-    return Firebase.auth.currentUser?.isEmailVerified ?: false
+    return user.isEmailVerified ?: false
 }
 
 @Throws(Throwable::class)
