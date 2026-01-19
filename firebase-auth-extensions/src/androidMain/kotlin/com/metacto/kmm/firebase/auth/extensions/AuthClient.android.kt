@@ -90,9 +90,12 @@ actual class AuthClient : AuthProvider {
     }
 
     actual override suspend fun signInWithGoogle(): AuthenticationMetadata {
+        // Sign out first to always show the account chooser dialog
         return suspendCancellableCoroutine { continuation ->
             this.continuation = continuation
-            options.launcher.launch(gClient.signInIntent)
+            gClient.signOut().addOnCompleteListener {
+                options.launcher.launch(gClient.signInIntent)
+            }
         }
     }
 
