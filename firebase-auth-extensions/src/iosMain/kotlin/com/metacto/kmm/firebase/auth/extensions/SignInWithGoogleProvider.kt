@@ -27,6 +27,9 @@ class SignInWithGoogleProvider(
 
             GIDSignIn.sharedInstance.configuration = GIDConfiguration(clientId)
 
+            // Sign out first to always show the account chooser dialog
+            GIDSignIn.sharedInstance.signOut()
+
             dispatch_async(dispatch_get_main_queue()) {
                 GIDSignIn.sharedInstance.signInWithPresentingViewController(
                     presentingViewController,
