@@ -14,3 +14,8 @@ captures
 xcuserdata
 local.properties
 iosApp/Pods
+
+# environment variables (post-PolinRider hardening)
+.env
+.env.*
+!.env.example
